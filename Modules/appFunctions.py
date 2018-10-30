@@ -31,6 +31,7 @@ customPropertyNamePromoteStream = config['promoteOnCustomPropertyChange'][
 logger.info('Custom property name containing stream names: ' + customPropertyNamePromoteStream)
 appPromotedTagID = config['promoteOnCustomPropertyChange']['appPromotedTagID']
 logger.info('ID of the tag used to signify whether the app is promoted or not: ' + appPromotedTagID)
+f.close()
 
 
 def promoteApp(appID):

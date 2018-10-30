@@ -31,6 +31,8 @@ logger.info('Log level set to: ' + logLevel)
 localServer = config['promoteOnCustomPropertyChange']['localServer']
 userDirectory = config['promoteOnCustomPropertyChange']['userDirectory']
 userId = config['promoteOnCustomPropertyChange']['userId']
+f.close()
+
 logger.info('User Directory: ' + userDirectory)
 logger.info('User: ' + userId)
 
