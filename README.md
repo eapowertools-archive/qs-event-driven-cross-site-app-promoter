@@ -60,7 +60,7 @@ I have chosen to develop the application in Python using Flask, however the same
 Two Python programs that should be run as windows services on system startup (no dependencies needed):
 
 - The listener using Flask. This is the main application that listens for app changes, and acts on them accordingly
-A lightweight program that creates (and validates that the notification subscription exists) every 60 seconds. This is required as the notification subscriptions do not persist, and are gone after the repository service stops. This program runs continuously to ensure that they are always available, created the notification within 60 seconds of the repository service startup.
+- A lightweight program that creates (and validates that the notification subscription exists) every 60 seconds. This is required as the notification subscriptions do not persist, and are gone after the repository service stops. This program runs continuously to ensure that they are always available, created the notification within 60 seconds of the repository service startup.
 
 
 ## Installation and Configuration
