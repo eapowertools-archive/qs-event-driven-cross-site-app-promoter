@@ -18,7 +18,7 @@
  
 ## About
 
-Integrated workflow requests are becoming more and more common from clients in 2018. What all of these requests have in common is that they all want: when a particular event occurs in Qlik Sense, I want to automatically do x, y, z. Enter the Notification endpoints via the QRS API. The `/qrs/notification` endpoint allows you to "Add a change subscription that makes the QRS call a URL when the specified entity has changed." For example, whenever an app is updated, POST to this URL a JSON block including the GUID of the changed object, for which you can then construct some code to do x, y, z.
+Integrated workflow requests are becoming more and more common in 2018. What all of these requests have in common is: when a particular event occurs in Qlik Sense, I want to automatically do x, y, z. Enter the Notification endpoints via the QRS API. The `/qrs/notification` endpoint allows you to "Add a change subscription that makes the QRS call a URL when the specified entity has changed." For example, whenever an app is updated, POST to this URL a JSON block including the GUID of the changed object, for which you can then construct some code to do x, y, z.
 
 
 ## Scenario and Example
@@ -68,7 +68,9 @@ A lightweight program that creates (and validates that the notification subscrip
 2. Port 4242 open on the remote server (and local server if you are running this somewhere other than the Qlik Sense server of the lower tier, which is assumed). Port 4242 is required as we are leveraging certificates to securely communicate with the QRS API, as opposed to going over the proxy. The script could be modified to leverage NTLM, but that is not included in this example.
 3. Once installed, run: pip install -r /path/to/requirements.txt or just: pip install requests flask
 4. Export certificates from the local Qlik site's QMC with the server name and no password, then do the same for the remote server
+
 ![export-certs](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/export_certs.png)
+
 5. Take the client.pem and client_key.pem from the local site export and place them in the /Certificates/LocalServerCerts/ folder
 6. Take the client.pem and client_key.pem from the remote site export and place them in the /Certificates/RemoteServerCerts/ folder
 7. Create two custom properties in the local server's QMC (they can be named whatever you'd like, and are referenced in a config):
