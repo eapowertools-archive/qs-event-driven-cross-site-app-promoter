@@ -1,0 +1,12 @@
+{
+	"logLevel" : "INFO",
+	"promoteOnCustomPropertyChange" : {
+		"customPropertyNamePromote" 		: "PromoteToServer",
+		"customPropertyNamePromoteStream" 	: "PromoteToStream",
+		"appPromotedTagID" 					: "17e054d4-3a62-4c1d-b270-36bbe2078b4a",
+		"localServer" 						: "dev.domain.com",
+		"remoteServer" 						: "test.domain.com",
+		"userDirectory" 					: "INTERNAL",
+		"userId" 							: "sa_api"
+	}
+}
