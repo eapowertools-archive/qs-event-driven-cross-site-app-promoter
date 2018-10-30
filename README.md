@@ -66,13 +66,13 @@ Two Python programs that should be run as windows services on system startup (no
 ## Installation and Configuration
 1. This application is written in Python 3 and Flask requires Python 3.4+. 
 2. Port 4242 open on the remote server (and local server if you are running this somewhere other than the Qlik Sense server of the lower tier, which is assumed). Port 4242 is required as we are leveraging certificates to securely communicate with the QRS API, as opposed to going over the proxy. The script could be modified to leverage NTLM, but that is not included in this example.
-3. Once installed, run: pip install -r /path/to/requirements.txt or just: pip install requests flask
+3. Once installed, run: ```pip install -r /path/to/requirements.txt``` or just: ```pip install requests flask```
 4. Export certificates from the local Qlik site's QMC with the server name and no password, then do the same for the remote server
 
 ![export-certs](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/export_certs.png)
 
-5. Take the client.pem and client_key.pem from the local site export and place them in the /Certificates/LocalServerCerts/ folder
-6. Take the client.pem and client_key.pem from the remote site export and place them in the /Certificates/RemoteServerCerts/ folder
+5. Take the client.pem and client_key.pem from the local site export and place them in the `/Certificates/LocalServerCerts/` folder
+6. Take the client.pem and client_key.pem from the remote site export and place them in the `/Certificates/RemoteServerCerts/` folder
 7. Create two custom properties in the local server's QMC (they can be named whatever you'd like, and are referenced in a config):
     - PromoteToServer
         - Contains an arbitrary name of your Qlik Sense tier that you want the option of promoting to, as well as a the string 'Overwrite' or 'Duplicate'.
@@ -89,14 +89,14 @@ Two Python programs that should be run as windows services on system startup (no
 8. Create a tag that will be applied to an app to illustrate that the app has been pushed to the server
     - Example tag: 'Promoted'
 9. Edit the config.json file:
-    - Set your logging level. Default is '"INFO", however "DEBUG" is also available
+    - Set your logging level. Default is "INFO", however "DEBUG" is also available
     - Set the name of your custom properties
     - Set the GUID of your created tag (you can get this from the QMC by clicking on 'Tag's, then selecting 'ID' via the column selector in the top right.
     - Set the URL for you local server
     - Set the URL for your remote server
     - Set the user directory and user id – I suggest leaving these as the default, "INTERNAL" "sa_api"
     ![config](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/config.png)
-10. For initial testing, manually run notificationFlaskListener.py and notificationCreator.py
+10. For initial testing, manually run _notificationFlaskListener.py_ and _notificationCreator.py_
 11. Create windows services out of the above two py files to run on system startup using something like NSSM (instructions below) – be sure to stop both of your manually run py files before running the services
 
 
