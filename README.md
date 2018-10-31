@@ -40,9 +40,9 @@ The application is managed via Qlik Sense custom properties and tags:
         - Example values:
             - 'Everyone'
             - 'Review'
-    - A single Tag:
-        - A tag that will be applied to an app to illustrate that the app has been pushed to the server
-        - Example tag: 'PromotedToTest'
+- A single Tag:
+    - A tag that will be applied to an app to illustrate that the app has been pushed to the server
+    - Example tag: 'PromotedToTest'
 
 Example (the tag gets added programmatically after the app has been promoted):
 
