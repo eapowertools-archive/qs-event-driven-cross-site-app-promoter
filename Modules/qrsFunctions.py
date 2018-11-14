@@ -57,15 +57,22 @@ def closeRequestsSession(s):
 
 def appFull(s, baseUrl, appID):
     # get app full
-    r = s.get(baseUrl + "/qrs/app/full?filter=id eq " + appID + "&xrfkey=abcdefg123456789")
+    r = s.get(baseUrl + "/qrs/app/full?filter=id eq " +
+              appID + "&xrfkey=abcdefg123456789")
     rjson = r.json()[0]
 
     return r.status_code, rjson
 
 
-def exportApp(s, baseUrl, appID, appName):
+def exportApp(s, baseUrl, appID, appName, skipData=False):
     temp_GUID = str(uuid.uuid4())
-    r = s.post(baseUrl + "/qrs/app/" + appID + "/export/" + temp_GUID + "?xrfkey=abcdefg123456789")
+    if skipData:
+        r = s.post(baseUrl + "/qrs/app/" + appID + "/export/" +
+                   temp_GUID + "?skipData=true&xrfkey=abcdefg123456789")
+    else:
+        r = s.post(baseUrl + "/qrs/app/" + appID + "/export/" +
+                   temp_GUID + "?xrfkey=abcdefg123456789")
+
     rjson = r.json()
     download_path = str(rjson["downloadPath"])
     r = s.get(baseUrl + download_path, stream=True)
@@ -92,7 +99,8 @@ def uploadApp(s, baseUrl, appName):
 
 
 def getRemoteAppIdsByName(s, baseUrl, appName):
-    r = s.get(baseUrl + "/qrs/app/full?filter=name eq '" + appName + "'&xrfkey=abcdefg123456789")
+    r = s.get(baseUrl + "/qrs/app/full?filter=name eq '" +
+              appName + "'&xrfkey=abcdefg123456789")
     rjson = r.json()
 
     return r.status_code, rjson
@@ -135,7 +143,8 @@ def appDelete(s, baseUrl, appID):
 
 def duplicateApp(s, baseUrl, appID, appName):
     # coppy the app
-    r = s.post(baseUrl + "/qrs/app/" + appID + "/copy?name=" + appName + "&xrfkey=abcdefg123456789")
+    r = s.post(baseUrl + "/qrs/app/" + appID + "/copy?name=" +
+               appName + "&xrfkey=abcdefg123456789")
     rjson = r.json()
     dupAppID = rjson['id']
 
@@ -146,7 +155,8 @@ def addTagToApp(s, baseUrl, appID, tagID):
     status, rjson = appFull(s, baseUrl, appID)
 
     rjson['tags'].append(dict({"id": tagID}))
-    rjson['modifiedDate'] = str(((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
+    rjson['modifiedDate'] = str(
+        ((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
     data = json.dumps(rjson)
 
     # add the tag to the app
@@ -165,7 +175,8 @@ def removeTagFromApp(s, baseUrl, appID, tagID):
         if rjson['tags'][i]['id'] == tagID:
             del rjson['tags'][i]
 
-    rjson['modifiedDate'] = str(((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
+    rjson['modifiedDate'] = str(
+        ((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
     data = json.dumps(rjson)
 
     # put the app without the tag
@@ -183,3 +194,20 @@ def deleteLocalAppExport(appName):
         return True
     except:
         return False
+
+
+def modifyAppDescription(s, baseUrl, appID, description):
+    status, rjson = appFull(s, baseUrl, appID)
+
+    rjson['modifiedDate'] = str(
+        ((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
+    rjson['description'] = description
+
+    data = json.dumps(rjson)
+
+    r = s.put(
+        baseUrl + "/qrs/app/" + appID + "?xrfkey=abcdefg123456789",
+        data=data,
+        headers={"Content-Type": "application/json"})
+
+    return r.status_code

@@ -23,7 +23,8 @@ if logLevel == 'INFO':
 else:
     logging.basicConfig(level=logging.DEBUG)
     handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.info('Log level set to: ' + logLevel)
@@ -75,7 +76,8 @@ while True:
                     '	Response: ' + str(r.json()))
     except requests.exceptions.RequestException as e:
         logger.info(
-            'The notifications cannot be created. The repository service is likely not fully operational.'
+            'The notifications cannot be created. ' + 
+            'The repository service is likely not fully operational.'
         )
     except ValueError as e:
         logger.info('Value Error received: ' + str(e) +

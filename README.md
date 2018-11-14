@@ -1,7 +1,7 @@
 # Status
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-# QRS API Notification Example DevOps Workflow -- Promoting Apps Cross Site
+# QRS API Notification Example DevOps Workflow -- Promoting Apps Cross Site with Versioning in Amazon S3
 
 **This repository is intended to be used as an example and should not be used in Production**
 
@@ -27,6 +27,9 @@ Integrated workflow requests are becoming more and more common in 2018. What all
 ## Scenario and Example
 A common scenario that I've chosen to illustrate is: "How do I automatically/programatically promote apps through my Qlik Sense tiers, e.g. from Dev → Test → Prod, without doing it in batch with tools like the Qlik CLI?" In the example I've created, I have used the scenario above: whenever an app is updated, POST to this URL. Having this information sent every time the app is updated, allows me to then create a workflow to push and publish apps to other servers based off of conditions. The intended usage of this application is that it should be single site → single site. For example, it should be installed on 'Dev' with the option of promoting to 'Test', and then installed on 'Test' with the option of promoting to 'Prod'. The application could easily be edited to have the ability to post to multiple servers as well, but it defaults to one.
 
+**Versioning in Amazon S3**
+As a part of this workflow, I've also chosen to allow the option to upload the app templates (the apps without data) to an S3 bucket with versioning enabled. This can be configured easily in the config.json file, however it is setup assuming that the machine you are running the script on has programmatic access to the S3 bucket, e.g. an IAM Role or otherwise. This is toggled off by default.
+
 The application is managed via Qlik Sense custom properties and tags:
 
 - Custom Properties (they can be named whatever you'd like, and are referenced in a config) applied at the App level:
@@ -40,6 +43,8 @@ The application is managed via Qlik Sense custom properties and tags:
         - Example values:
             - 'Everyone'
             - 'Review'
+    - PromotionS3Versioning
+        - Contains the value 'True' that is applied to any app that you'd like versioned in your Amazon S3 bucket
 - A single Tag:
     - A tag that will be applied to an app to illustrate that the app has been pushed to the server
     - Example tag: 'PromotedToTest'
@@ -49,6 +54,8 @@ Example (the tag gets added programmatically after the app has been promoted):
 ![customProps](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/custom_props.png)
 
 The high-level concept is that you would select a single value in "PromoteToServer", e.g. 'Test Server - Duplicate', and then select 1-n streams from the "PromoteToStream" custom property. If the streams exist on the remote server and the app is not already tagged as promoted, for each stream that exists, the application will export the app, upload it to the new server, and publish it – thereby tagging the app on completion so the cycle doesn't continue on every app update. If the user then removes the custom properties (or tag directly), the tag will be removed from the app, and the cycle would continue. The user could then select 'Test Server - Overwrite', select 1-n streams, and the application would overwrite any existing applications on the server that match by name in the requested streams – and if the streams exist on the server but there aren't any matching apps in it, it will upload the app and publish the app to those streams as well.
+
+Lastly, the user can add the value of 'True' to the "PromotionS3Versioning" property to have the app's template uploaded to S3 at the end of the chain.
 
 ![workflow](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/QRS+Notification+API+-+App+Promotion+Example+Workflow.png)
 
@@ -89,6 +96,9 @@ Two Python programs that should be run as windows services on system startup (no
             - 'Everyone'
             - 'Review'
             ![promote-to-stream](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/promoteToStream.png)
+    - PromotionS3Versioning
+        - Contains the value 'True' that is applied to any app that you'd like versioned in your Amazon S3 bucket
+
 8. Create a tag that will be applied to an app to illustrate that the app has been pushed to the server
     - Example tag: 'Promoted'
 9. Edit the config.json file:
@@ -98,7 +108,11 @@ Two Python programs that should be run as windows services on system startup (no
     - Set the URL for you local server
     - Set the URL for your remote server
     - Set the user directory and user id – I suggest leaving these as the default, "INTERNAL" "sa_api"
-    ![config](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/config.png)
+    - If you'd like to setup versioning in S3, under "appVersionOnChange", enable "enabled" to 'true'
+    - Set the custom property name for the property which will control versioning
+    - Set the name of your S3 bucket
+    - Set the prefix if any for the keys
+        - e.g. 'Apps' would yield the key 'Apps/MyApp-Template.qvf'
 10. For initial testing, manually run _notificationFlaskListener.py_ and _notificationCreator.py_
 11. Create windows services out of the above two py files to run on system startup using something like NSSM (instructions below) – be sure to stop both of your manually run py files before running the services
 

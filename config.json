@@ -3,10 +3,16 @@
 	"promoteOnCustomPropertyChange" : {
 		"customPropertyNamePromote" 		: "PromoteToServer",
 		"customPropertyNamePromoteStream" 	: "PromoteToStream",
-		"appPromotedTagID" 					: "17e054d4-3a62-4c1d-b270-36bbe2078b4a",
-		"localServer" 						: "dev.domain.com",
-		"remoteServer" 						: "test.domain.com",
+		"appPromotedTagID" 					: "f37f69c7-36a6-4422-b1bd-2dd136d7efb4",
+		"localServer" 						: "dev.company.com",
+		"remoteServer" 						: "prod.company.com",
 		"userDirectory" 					: "INTERNAL",
-		"userId" 							: "sa_api"
+		"userId" 							: "sa_api",
+		"appVersionOnChange" : {
+			"enabled" 				: "false",
+			"customPropertyName" 	: "PromotionS3Versioning",
+			"s3bucket" 				: "your-bucket",
+			"prefix"				: "Apps/"
+		}
 	}
 }

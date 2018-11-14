@@ -1,6 +1,9 @@
 import logging
 from logging.handlers import RotatingFileHandler
 from Modules.qrsFunctions import *
+from pathlib import Path
+import os
+import time
 
 # configuration file
 with open('config.json') as f:
@@ -18,19 +21,77 @@ if logLevel == 'INFO':
 else:
     logging.basicConfig(level=logging.DEBUG)
     handler.setLevel(logging.DEBUG)
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+formatter = logging.Formatter(
+    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 logger.info('Log level set to: ' + logLevel)
 
 # additional config
-customPropertyNamePromote = config['promoteOnCustomPropertyChange']['customPropertyNamePromote']
+customPropertyNamePromote = config[
+    'promoteOnCustomPropertyChange']['customPropertyNamePromote']
 logger.info('Custom property name for promotion: ' + customPropertyNamePromote)
 customPropertyNamePromoteStream = config['promoteOnCustomPropertyChange'][
     'customPropertyNamePromoteStream']
-logger.info('Custom property name containing stream names: ' + customPropertyNamePromoteStream)
+logger.info('Custom property name containing stream names: ' +
+            customPropertyNamePromoteStream)
 appPromotedTagID = config['promoteOnCustomPropertyChange']['appPromotedTagID']
-logger.info('ID of the tag used to signify whether the app is promoted or not: ' + appPromotedTagID)
+logger.info(
+    'ID of the tag used to signify whether the app is promoted or not: ' + appPromotedTagID)
+versioningCustomPropName = config['promoteOnCustomPropertyChange'][
+    'appVersionOnChange']['customPropertyName']
+logger.info('Custom property name used for versioning if enabled: ' +
+            versioningCustomPropName)
+localServer = config['promoteOnCustomPropertyChange']['localServer']
+
+# check for versioning
+appVersionOnChange = config['promoteOnCustomPropertyChange'][
+    'appVersionOnChange']['enabled'].lower()
+if appVersionOnChange == 'true':
+    logger.info('App versioning enabled with s3')
+    s3bucket = config['promoteOnCustomPropertyChange'][
+        'appVersionOnChange']['s3bucket']
+    logger.info('Target s3 bucket: ' + str(s3bucket))
+    s3Prefix = config['promoteOnCustomPropertyChange'][
+        'appVersionOnChange']['prefix']
+    logger.info('Prefix: ' + str(s3Prefix))
+
+    try:
+        import boto3
+        from boto3.s3.transfer import S3Transfer
+        import threading
+        appVersioning = True
+        # get the file path for the ExportedApps/ dir for later use
+        exportedAppDirectory = str(Path(__file__).parent.parent).replace(
+            '\\', '/') + '/ExportedApps/'
+
+        # https://boto3.amazonaws.com/v1/documentation/api/latest/_modules/boto3/s3/transfer.html
+        class S3ProgressPercentage(object):
+
+            def __init__(self, filename):
+                self._filename = filename
+                self._size = float(os.path.getsize(filename))
+                self._seen_so_far = 0
+                self._lock = threading.Lock()
+
+            def __call__(self, bytes_amount):
+                with self._lock:
+                    self._seen_so_far += bytes_amount
+                    percentage = (self._seen_so_far / self._size) * 100
+                    logger.debug(
+                        "\r%s  %s / %s  (%.2f%%)" % (
+                            self._filename, self._seen_so_far, self._size,
+                            percentage))
+
+    except ImportError:
+        appVersioning = False
+        logger.info(
+            'Could not import "boto3" library which is used with s3. Please ' +
+            'install the boto library for versioning to be enabled')
+else:
+    logger.info('App versioning is not enabled.')
+    appVersioning = False
+
 f.close()
 
 
@@ -42,17 +103,32 @@ def promoteApp(appID):
     appFullStatus, appFullResponse = appFull(s, baseUrl, appID)
     closeRequestsSession(s)
     if appFullStatus != 200:
-        logger.debug('Something went wrong while trying to get app/full: ' + str(appFullStatus))
+        logger.debug(
+            'Something went wrong while trying to get app/full: ' + str(appFullStatus))
     else:
         logger.debug('Got app/full data: ' + str(appFullStatus))
 
     appName = appFullResponse['name']
     logger.info('App Name: ' + appName)
 
-    appNumCustomProperties = len(appFullResponse['customProperties'])
-    logger.info('App Number of Custom Properties: ' + str(appNumCustomProperties))
+    appOwnerID = appFullResponse['owner']['userId']
+    appOwnerUserDirectory = appFullResponse['owner']['userDirectory']
+    appOwner = str(str(appOwnerUserDirectory) + '\\' + str(appOwnerID))
+    logger.info('App owned by ' + appOwner)
+    modifiedByUser = str(appFullResponse['modifiedByUserName'])
+    modifiedDate = str(appFullResponse['modifiedDate'])
+    logger.info('Modified by user: ' + str(modifiedByUser))
 
-    # if the promote custom property is not found, the app promoted tag will be bounced (removed) if it exists
+    # set the description that will be applied to promoted apps
+    description = 'App promoted from "' + localServer + '" by "' + modifiedByUser + \
+        '" at "' + modifiedDate + '" where it was owned by "' + appOwner + '".'
+
+    appNumCustomProperties = len(appFullResponse['customProperties'])
+    logger.info('App Number of Custom Properties: ' +
+                str(appNumCustomProperties))
+
+    # if the promote custom property is not found, the app promoted tag will
+    # be bounced (removed) if it exists
     logger.info('Checking to see if app is tagged as promoted')
 
     appIsPromoted = False
@@ -70,11 +146,13 @@ def promoteApp(appID):
     if appNumCustomProperties >= 1:
         promoteCustomPropFound = False
         promoteStreamCustomPropFound = False
+        appVersioningValueTrue = False
 
         logger.info('Searching app/full to see if "' + customPropertyNamePromote + '" and/or "' +
                     customPropertyNamePromoteStream + '" custom properties exist')
         streamValueList = []
         customPropertyNamePromoteValueCount = 0
+        customPropVersionValueCount = 0
         for customProp in appFullResponse['customProperties']:
             if customProp['definition']['name'] == customPropertyNamePromote:
                 promoteValue = customProp['value']
@@ -88,15 +166,36 @@ def promoteApp(appID):
                             '" exists with the value of: ' + str(promoteStreamValue))
                 promoteStreamCustomPropFound = True
                 streamValueList.append(promoteStreamValue)
+            elif appVersioning and appVersionOnChange == 'true':
+                if customProp['definition']['name'] == versioningCustomPropName:
+                    customPropVersionValueCount += 1
+                    versioningCustomPropValue = customProp['value'].lower()
+                    if versioningCustomPropValue == 'true':
+                        logger.info('App versioning custom property "' + versioningCustomPropName +
+                                    '"" with the value of: ' + versioningCustomPropValue)
+                        appVersioningValueTrue = True
+                    elif customPropVersionValueCount == 1:
+                        logger.info('This app will not be versioned as the value ' +
+                                    'must be set to "true" (case insensitive)')
+                elif appVersioning and versioningCustomPropValue == 'true':
+                    logger.debug('Versioning is enabled but the custom property ' +
+                                 '"' + versioningCustomPropName + '" cannot be found')
+                    logger.debug('The app will not be versioned.')
+            elif customProp['definition']['name'] == versioningCustomPropName:
+                logger.info('Versioning is not enabled though the custom property ' +
+                            '"' + versioningCustomPropName + '" is found. No action taken.')
 
         if promoteCustomPropFound and promoteStreamCustomPropFound and customPropertyNamePromoteValueCount == 1:
-            logger.info('Both mandatory custom properties have values, proceeding')
+            logger.info(
+                'Both mandatory custom properties have values, proceeding')
             if appIsPromoted:
-                logger.info('App is already promoted. No action will be taken. Exiting.')
+                logger.info(
+                    'App is already promoted. No action will be taken. Exiting.')
             else:
                 # lookup all of the streams by name to see if they are valid
                 streamIDList = []
                 matchingStreamList = []
+                finalIDList = []
                 i = -1
                 s, baseUrl = establishRequestsSession('remote')
                 logger.info("Getting Stream ID's from remote server by name for streams " +
@@ -104,13 +203,15 @@ def promoteApp(appID):
                 for stream in streamValueList:
                     i += 1
 
-                    streamIDStatus, streamID, rjson = getRemoteStreamIdsByName(s, baseUrl, stream)
+                    streamIDStatus, streamID, rjson = getRemoteStreamIdsByName(
+                        s, baseUrl, stream)
                     if streamIDStatus != 200:
                         logger.debug(
                             'Something went wrong while trying to get the ID for stream: ' + stream)
                         logger.debug('Status: ' + str(streamIDStatus))
                     else:
-                        logger.debug('Get stream ID call status: ' + str(streamIDStatus))
+                        logger.debug(
+                            'Get stream ID call status: ' + str(streamIDStatus))
                     if streamID != None:
                         matchingStreamList.append(streamValueList[i])
                         streamIDList.append(streamID)
@@ -151,9 +252,11 @@ def promoteApp(appID):
                             logger.debug('Something went wrong when looking up apps by name: ' +
                                          str(remoteAppIDstatus))
                         else:
-                            logger.debug('Call to look up apps status: ' + str(remoteAppIDstatus))
+                            logger.debug(
+                                'Call to look up apps status: ' + str(remoteAppIDstatus))
 
-                        logger.info('App IDs found with matching names: ' + str(numRemoteAppIDs))
+                        logger.info(
+                            'App IDs found with matching names: ' + str(numRemoteAppIDs))
 
                         remoteAppDetailList = []
                         matchingAppIDs = []
@@ -169,7 +272,8 @@ def promoteApp(appID):
 
                                     for sID in streamIDList:
                                         if sID == remoteStreamID:
-                                            matchingPublishedAppIDs.append(remoteAppID)
+                                            matchingPublishedAppIDs.append(
+                                                remoteAppID)
                                             remoteAppDetailList.append({
                                                 'appID':
                                                 remoteAppID,
@@ -180,26 +284,32 @@ def promoteApp(appID):
                                             })
 
                             closeRequestsSession(s)
-                            numRemoteFoundTargetPublished = len(remoteAppDetailList)
+                            numRemoteFoundTargetPublished = len(
+                                remoteAppDetailList)
 
-                            logger.info("Matching App ID's: " + str(matchingAppIDs))
+                            logger.info("Matching App ID's: " +
+                                        str(matchingAppIDs))
                             logger.info(
                                 'Number of matching apps with matching names that are published to target streams: '
                                 + str(numRemoteFoundTargetPublished))
                             logger.info('Matching app IDs that are published: ' +
                                         str(matchingPublishedAppIDs))
-                            logger.debug('App info: ' + str(remoteAppDetailList))
+                            logger.debug('App info: ' +
+                                         str(remoteAppDetailList))
 
                         leftOverStreamIDList = streamIDList
                         if numRemoteFoundTargetPublished >= 1:
                             s, baseUrl = establishRequestsSession('remote')
-                            logger.info('Uploading app onto remote server and getting the new ID')
-                            uploadAppStatus, newAppID = uploadApp(s, baseUrl, appName)
+                            logger.info(
+                                'Uploading app onto remote server and getting the new ID')
+                            uploadAppStatus, newAppID = uploadApp(
+                                s, baseUrl, appName)
                             if uploadAppStatus != 201:
                                 logger.debug('Something went wrong while trying to upload the app: '
                                              + str(uploadAppStatus))
                             else:
-                                logger.debug("App uploaded: " + str(uploadAppStatus))
+                                logger.debug("App uploaded: " +
+                                             str(uploadAppStatus))
                             closeRequestsSession(s)
 
                             s, baseUrl = establishRequestsSession('remote')
@@ -218,7 +328,7 @@ def promoteApp(appID):
                                     logger.debug("Successfully replaced app(s): " +
                                                  str(appReplacedStatus))
                                     appPromoted = True
-
+                                    finalIDList.append(remoteAppID['appID'])
                                 try:
                                     popThis = remoteAppID['streamID']
                                     leftOverStreamIDList.remove(popThis)
@@ -226,7 +336,8 @@ def promoteApp(appID):
                                     pass
                             closeRequestsSession(s)
 
-                            logger.info("Deleting application that was used to overwrite")
+                            logger.info(
+                                "Deleting application that was used to overwrite")
                             s, baseUrl = establishRequestsSession('remote')
                             appDelete(s, baseUrl, newAppID)
                             if appReplacedStatus != 200:
@@ -245,20 +356,25 @@ def promoteApp(appID):
                             for streamID in leftOverStreamIDList:
                                 i += 1
                                 if streamID != None:
-                                    s, baseUrl = establishRequestsSession('remote')
+                                    s, baseUrl = establishRequestsSession(
+                                        'remote')
                                     logger.info(
                                         'Uploading app onto remote server and getting the new ID')
-                                    uploadAppStatus, newAppID = uploadApp(s, baseUrl, appName)
+                                    uploadAppStatus, newAppID = uploadApp(
+                                        s, baseUrl, appName)
                                     if uploadAppStatus != 201:
                                         logger.debug(
                                             'Something went wrong while trying to upload the app: ' +
                                             str(uploadAppStatus))
                                     else:
-                                        logger.debug("App uploaded: " + str(uploadAppStatus))
+                                        logger.debug(
+                                            "App uploaded: " + str(uploadAppStatus))
                                     closeRequestsSession(s)
 
-                                    s, baseUrl = establishRequestsSession('remote')
-                                    logger.info('Publishing app to stream: ' + str(streamID))
+                                    s, baseUrl = establishRequestsSession(
+                                        'remote')
+                                    logger.info(
+                                        'Publishing app to stream: ' + str(streamID))
                                     appPublishedStatus = publishToStream(
                                         s, baseUrl, newAppID, streamID)
                                     closeRequestsSession(s)
@@ -269,14 +385,18 @@ def promoteApp(appID):
                                     else:
                                         logger.debug('App published status: ' +
                                                      str(appPublishedStatus))
-                                        logger.debug('App has been published to ' + str(streamID))
+                                        logger.debug(
+                                            'App has been published to ' + str(streamID))
                                         appPromoted = True
+                                        finalIDList.append(newAppID)
                                 else:
                                     pass
 
-                    # the app will not overwrite an app unless the target stream exists
+                    # the app will not overwrite an app unless the target
+                    # stream exists
                     elif 'overwrite' in promoteValue.lower():
-                        logger.info('App is set to overwrite, but no target streams exist. Exiting.')
+                        logger.info(
+                            'App is set to overwrite, but no target streams exist. Exiting.')
 
                     # if the app is set to duplicate and if any target streams exist on the server, new apps will be uploaded and published
                     # to them, regardless if any apps previously existed or not
@@ -291,56 +411,153 @@ def promoteApp(appID):
                                 s, baseUrl = establishRequestsSession('remote')
                                 logger.info(
                                     'Uploading app onto remote server and getting the new ID')
-                                uploadAppStatus, newAppID = uploadApp(s, baseUrl, appName)
+                                uploadAppStatus, newAppID = uploadApp(
+                                    s, baseUrl, appName)
                                 if uploadAppStatus != 201:
                                     logger.debug(
                                         'Something went wrong while trying to upload the app: ' +
                                         str(uploadAppStatus))
                                 else:
-                                    logger.debug("App uploaded: " + str(uploadAppStatus))
+                                    logger.debug(
+                                        "App uploaded: " + str(uploadAppStatus))
                                 closeRequestsSession(s)
 
                                 s, baseUrl = establishRequestsSession('remote')
-                                logger.info('Publishing app to ' + str(streamID))
-                                appPublishedStatus = publishToStream(s, baseUrl, newAppID, streamID)
+                                logger.info(
+                                    'Publishing app to ' + str(streamID))
+                                appPublishedStatus = publishToStream(
+                                    s, baseUrl, newAppID, streamID)
                                 closeRequestsSession(s)
                                 if appPublishedStatus != 200:
                                     logger.debug('Something went wrong while trying to publish: ' +
                                                  str(appPublishedStatus))
                                 else:
-                                    logger.debug('App published status: ' + str(appPublishedStatus))
-                                    logger.debug('App has been published to ' + str(streamID))
+                                    logger.debug(
+                                        'App published status: ' + str(appPublishedStatus))
+                                    logger.debug(
+                                        'App has been published to ' + str(streamID))
                                     appPromoted = True
+                                    finalIDList.append(newAppID)
                             else:
-                                logger.debug('Could not find stream: ' + str(streamID))
+                                logger.debug(
+                                    'Could not find stream: ' + str(streamID))
 
                     elif 'duplicate' in promoteValue.lower():
-                        logger.info('App set to duplicate, but no target streams exist. Exiting.')
+                        logger.info(
+                            'App set to duplicate, but no target streams exist. Exiting.')
                     else:
                         logger.info('Something went wrong. Exiting.')
 
                     # if the app successfully published any apps,
-                    # it will consider it a success, and will tag the Qlik Sense app as promoted
+                    # it will consider it a success, and will tag the Qlik
+                    # Sense app as promoted
                     if appPromoted:
+                        # check if versioning is enabled
+                        # if so, push to s3
+                        if appVersioning and appVersioningValueTrue:
+                            logger.info('Versioning the app')
+                            appNameNoData = appName + '-Template'
+
+                            s, baseUrl = establishRequestsSession('local')
+                            logger.info(
+                                'Exporting local app without data for versioning')
+                            exportAppStatus = exportApp(
+                                s, baseUrl, appID, appNameNoData, skipData=True)
+                            closeRequestsSession(s)
+                            if exportAppStatus != 200:
+                                logger.debug('Something went wrong while trying to export the app without data: ' +
+                                             str(exportAppStatus))
+                            else:
+                                logger.debug(
+                                    'App exported without data: ' + str(exportAppStatus))
+
+                            logger.info('Attempting to connect s3')
+                            appFileName = appNameNoData + '.qvf'
+                            appAbsPath = exportedAppDirectory + appFileName
+                            key = s3Prefix + appFileName
+                            try:
+                                s3 = boto3.client('s3')
+                                transfer = S3Transfer(s3)
+                                logger.info('Connected to s3')
+                                try:
+                                    logger.info('Trying to upload the app: ' + appFileName +
+                                                ' to the bucket: "' + str(s3bucket) + '"" with prefix: "' +
+                                                str(s3Prefix) + '"')
+                                    transfer.upload_file(appAbsPath, s3bucket, key,
+                                                         callback=S3ProgressPercentage(appAbsPath))
+                                    logger.info(
+                                        'App uploaded successfully to: "' + str(s3bucket) + '"')
+                                    try:
+                                        logger.info(
+                                            'Getting the version id of the s3 object')
+                                        s3 = boto3.resource('s3')
+                                        appS3VersionID = str(
+                                            s3.Object(s3bucket, key).version_id)
+                                        description += '\n\nS3 Version ID: ' + appS3VersionID
+                                        logger.info(
+                                            'App s3 version id: ' + appS3VersionID)
+                                        templateAppDeletedStatus = deleteLocalAppExport(
+                                            appNameNoData)
+                                        if not templateAppDeletedStatus:
+                                            logger.debug('Something went wrong while trying to delete the template app: ' +
+                                                         str(templateAppDeletedStatus))
+                                        else:
+                                            logger.debug(
+                                                'Local app deleted: ' + str(templateAppDeletedStatus))
+                                    except Exception as e:
+                                        logger.info(
+                                            'Something went wrong while getting the version id from s3')
+                                except Exception as e:
+                                    logger.info(
+                                        'Could not upload the app: ' + str(e))
+                            except Exception as e:
+                                logger.info(
+                                    'Could not connect to s3: ' + str(e))
+                                logger.info(
+                                    'Please ensure that your server has programmatic access such as an IAM role to the bucket enabled')
+
+                        # update the description for each of the published apps
+                        s, baseUrl = establishRequestsSession('remote')
+                        logger.info('Adding a description to the remote app')
+                        for publishedAppID in finalIDList:
+                            # add a description to the remote app that
+                            # states who promoted it and when
+                            descriptionStatusCode = modifyAppDescription(
+                                s, baseUrl, publishedAppID, description)
+                            if descriptionStatusCode != 200:
+                                logger.debug('Something went wrong while trying to add a description to the app: ' +
+                                             str(descriptionStatusCode))
+                            else:
+                                logger.debug(
+                                    'Description successfully added to the app: ' + str(descriptionStatusCode))
+                        closeRequestsSession(s)
+
+                        # tag the local as promoted
                         s, baseUrl = establishRequestsSession('local')
                         logger.info('Tagging app as promoted')
-                        tagAddedStatus = addTagToApp(s, baseUrl, appID, appPromotedTagID)
+                        tagAddedStatus = addTagToApp(
+                            s, baseUrl, appID, appPromotedTagID)
                         closeRequestsSession(s)
                         if tagAddedStatus != 200:
                             logger.debug(
                                 'Something went wrong while trying to add the promoted tag to the app: '
                                 + str(tagAddedStatus))
                         else:
-                            logger.debug('Promoted tag added to the app: ' + str(tagAddedStatus))
+                            logger.debug(
+                                'Promoted tag added to the app: ' + str(tagAddedStatus))
+
+                        # delete the local copy of the app
                         localAppDeletedStatus = deleteLocalAppExport(appName)
                         if not localAppDeletedStatus:
                             logger.debug('Something went wrong while trying to delete the app: ' +
                                          str(localAppDeletedStatus))
                         else:
-                            logger.debug('Local app deleted: ' + str(localAppDeletedStatus))
+                            logger.debug('Local app deleted: ' +
+                                         str(localAppDeletedStatus))
 
                 else:
-                    logger.info('No matching streams exist on the server. Exiting.')
+                    logger.info(
+                        'No matching streams exist on the server. Exiting.')
 
         elif customPropertyNamePromoteValueCount > 1:
             logger.info('There can only be a single value in the custom property: ' +
@@ -348,13 +565,15 @@ def promoteApp(appID):
         # if the promote custom property is not found,
         # the app promoted tag will be bounced (removed) if it exists
         elif not promoteCustomPropFound and appIsPromoted:
-            logger.info('The ' + customPropertyNamePromote + ' custom property is empty')
+            logger.info('The ' + customPropertyNamePromote +
+                        ' custom property is empty')
             if appIsPromoted:
                 logger.info('App is promoted, however the ' + customPropertyNamePromote +
                             ' does not exist')
                 logger.info('Removing the promoted tag')
                 s, baseUrl = establishRequestsSession('local')
-                removeTagStatus = removeTagFromApp(s, baseUrl, appID, appPromotedTagID)
+                removeTagStatus = removeTagFromApp(
+                    s, baseUrl, appID, appPromotedTagID)
                 closeRequestsSession(s)
                 if removeTagStatus != 200:
                     logger.debug('Something went wrong while trying to remove the promoted tag: ' +
@@ -373,7 +592,8 @@ def promoteApp(appID):
                         customPropertyNamePromoteStream + '" could be found. Exiting.')
 
     elif appIsPromoted and appNumCustomProperties == 0:
-        logger.info('App is promoted, however the ' + customPropertyNamePromote + ' does not exist')
+        logger.info('App is promoted, however the ' +
+                    customPropertyNamePromote + ' does not exist')
         logger.info('Removing the promoted tag')
         s, baseUrl = establishRequestsSession('local')
         removeTagStatus = removeTagFromApp(s, baseUrl, appID, appPromotedTagID)
