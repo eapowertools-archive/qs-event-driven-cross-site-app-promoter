@@ -51,7 +51,7 @@ The application is managed via Qlik Sense custom properties and tags:
 
 Example (the tag gets added programmatically after the app has been promoted):
 
-![customProps](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/custom_props.png)
+![customProps](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/customProps.png)
 
 The high-level concept is that you would select a single value in "PromoteToServer", e.g. 'Test Server - Duplicate', and then select 1-n streams from the "PromoteToStream" custom property. If the streams exist on the remote server and the app is not already tagged as promoted, for each stream that exists, the application will export the app, upload it to the new server, and publish it – thereby tagging the app on completion so the cycle doesn't continue on every app update. If the user then removes the custom properties (or tag directly), the tag will be removed from the app, and the cycle would continue. The user could then select 'Test Server - Overwrite', select 1-n streams, and the application would overwrite any existing applications on the server that match by name in the requested streams – and if the streams exist on the server but there aren't any matching apps in it, it will upload the app and publish the app to those streams as well.
 
