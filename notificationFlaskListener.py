@@ -1,5 +1,6 @@
 from flask import Flask, request
 from Modules.appFunctions import promoteApp
+import uuid
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -11,7 +12,6 @@ def appupdate():
     '''
     Function to promote an app to another Qlik Sense site on certain app updates
     '''
-
     responseJSON = request.get_json()
 
     appID = responseJSON[0]['objectID']
