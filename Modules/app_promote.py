@@ -56,8 +56,6 @@ CUSTOM_PROPERTY_NAME_PROMOTE_APPROVAL = CONFIG["promote_on_custom_property_chang
     "custom_property_name_promote_approval"]
 VERSIONING_CUSTOM_PROP_NAME = CONFIG["promote_on_custom_property_change"]["app_version_on_change"][
     "custom_property_name"]
-LOCAL_SERVER_FQDN = CONFIG[
-    "promote_on_custom_property_change"]["local_server_FQDN"]
 REMOTE_SERVER = CONFIG["promote_on_custom_property_change"][
     "remote_server_FQDN"]
 AUTO_UNPUBLISH_ON_APPROVE_OR_DENY = CONFIG["promote_on_custom_property_change"][
@@ -129,13 +127,15 @@ HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
 
 
-def promote_app(app_id):
+def promote_app(app_id, originator_node_id, originator_host_name):
     '''
     Triggers every time an app is updated
     '''
 
     log_id = str(uuid.uuid4())
     LOGGER.info("%s\t_____________App Updated_____________", log_id)
+    LOGGER.info("%s\tOriginator Node HostName: '%s'", log_id, originator_host_name)
+    LOGGER.info("%s\tOriginator Node ID: '%s'", log_id, originator_node_id)
 
     s, base_url = qrs.establish_requests_session("local")
     LOGGER.info("%s\tRequesting app/full info on '%s'", log_id, app_id)
@@ -158,10 +158,10 @@ def promote_app(app_id):
     modified_date = app_full_response["modifiedDate"]
 
     # set the description that will be applied to promoted apps
-    description = "App promoted from: '{}' by: '{}' at: '{}' where it was owned by: '{}'".format(
-        LOCAL_SERVER_FQDN, modified_by_user, modified_date, app_owner)
-    LOGGER.info("%s\tApp updated on: '%s' modified by: '%s' owned by: '%s'", log_id, LOCAL_SERVER_FQDN,
-                modified_by_user, app_owner)
+    description = "App promoted from node: '{}' by: '{}' at: '{}' where it was owned by: '{}'".format(
+        originator_host_name, modified_by_user, modified_date, app_owner)
+    LOGGER.info("%s\tApp updated on node: '%s' modified by: '%s' owned by: '%s'", log_id, 
+                originator_host_name, modified_by_user, app_owner)
 
     app_num_custom_properties = len(app_full_response["customProperties"])
     LOGGER.info("%s\tApp Number of Custom Properties: '%s'",
@@ -544,7 +544,7 @@ def promote_app(app_id):
                     # check if versioning is enabled
                     # if so, push to s3
                     LOGGER.info("%s\tApp promoted from:'%s' to '%s'",
-                                log_id, LOCAL_SERVER_FQDN, REMOTE_SERVER)
+                                log_id, originator_host_name, REMOTE_SERVER)
                     if APP_VERSIONING and app_versioning_value_true:
                         LOGGER.info("%s\tVersioning the app", log_id)
                         app_name_no_data = app_name + "-Template"

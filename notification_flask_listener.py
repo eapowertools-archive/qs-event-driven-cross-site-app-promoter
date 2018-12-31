@@ -28,8 +28,10 @@ def app_update_promote():
     response_json = request.get_json()
 
     app_id = response_json[0]['objectID']
+    originator_node_id = response_json[0]['originatorNodeID']
+    originator_host_name = response_json[0]['originatorHostName']
 
-    return promote_app(app_id)
+    return promote_app(app_id, originator_node_id, originator_host_name)
 
 
 @app.route("/app/publish/review", methods=['POST'])
