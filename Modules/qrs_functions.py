@@ -95,8 +95,8 @@ def export_app(s, base_url, app_id, app_name, skip_data=False):
     '''
     temp_GUID = str(uuid.uuid4())
     if skip_data:
-        r = s.post(base_url + "/qrs/app/" + app_id + "/export/" + temp_GUID +
-                   "?skipData=true&xrfkey=abcdefg123456789")
+        r = s.post(base_url + "/qrs/app/" + app_id + "/export/" +
+                   temp_GUID + "?skipData=true&xrfkey=abcdefg123456789")
     else:
         r = s.post(base_url + "/qrs/app/" + app_id + "/export/" + temp_GUID +
                    "?xrfkey=abcdefg123456789")
