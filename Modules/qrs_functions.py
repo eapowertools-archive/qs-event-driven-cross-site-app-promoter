@@ -16,7 +16,8 @@ with open('config.json') as f:
     CONFIG = json.load(f)
     f.close()
 
-REMOTE_SERVER = CONFIG['promote_on_custom_property_change']['remote_server_FQDN']
+REMOTE_SERVER = CONFIG['promote_on_custom_property_change'][
+    'remote_server_FQDN']
 USER_DIRECTORY = CONFIG['promote_on_custom_property_change']['user_directory']
 USER_ID = CONFIG['promote_on_custom_property_change']['user_id']
 LOCAL_SERVER = CONFIG["internal_central_node_IP"]
@@ -70,7 +71,8 @@ def app_full(s, base_url, app_id):
     qrs/app/full
     '''
     # get app full
-    r = s.get(base_url + "/qrs/app/full?filter=id eq " + app_id + "&xrfkey=abcdefg123456789")
+    r = s.get(base_url + "/qrs/app/full?filter=id eq " +
+              app_id + "&xrfkey=abcdefg123456789")
     rjson = r.json()[0]
 
     return r.status_code, rjson
@@ -80,7 +82,8 @@ def stream_full(s, base_url, stream_id):
     '''
     qrs/stream/full
     '''
-    r = s.get(base_url + "/qrs/stream/full?filter=id eq " + stream_id + "&xrfkey=abcdefg123456789")
+    r = s.get(base_url + "/qrs/stream/full?filter=id eq " +
+              stream_id + "&xrfkey=abcdefg123456789")
     rjson = r.json()[0]
 
     return r.status_code, rjson
@@ -130,7 +133,8 @@ def get_remote_app_ids_by_name(s, base_url, app_name):
     '''
     Looks up all apps by name and returns the json reponse
     '''
-    r = s.get(base_url + "/qrs/app/full?filter=name eq '" + app_name + "'&xrfkey=abcdefg123456789")
+    r = s.get(base_url + "/qrs/app/full?filter=name eq '" +
+              app_name + "'&xrfkey=abcdefg123456789")
     rjson = r.json()
 
     return r.status_code, rjson
@@ -203,7 +207,8 @@ def change_app_owner(s, base_url, app_id, owner_id):
     rjson = app_full(s, base_url, app_id)[1]
 
     rjson['owner'] = dict({'id': owner_id})
-    rjson['modifiedDate'] = str(((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
+    rjson['modifiedDate'] = str(
+        ((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
     data = json.dumps(rjson)
 
     # put the app without the tag
@@ -233,7 +238,8 @@ def modify_app_description(s, base_url, app_id, description):
     '''
     rjson = app_full(s, base_url, app_id)[1]
 
-    rjson['modifiedDate'] = str(((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
+    rjson['modifiedDate'] = str(
+        ((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
     rjson['description'] = description
 
     data = json.dumps(rjson)
@@ -245,6 +251,7 @@ def modify_app_description(s, base_url, app_id, description):
 
     return r.status_code
 
+
 def user_full(s, base_url, user_id):
     '''
     qrs/user/full
@@ -255,6 +262,7 @@ def user_full(s, base_url, user_id):
 
     return r.status_code, rjson
 
+
 def server_node_config_full(s, base_url):
     '''
     qrs/servernodeconfiguration/full
@@ -264,6 +272,7 @@ def server_node_config_full(s, base_url):
     rjson = r.json()
 
     return r.status_code, rjson
+
 
 def service_cluster_full(s, base_url):
     '''

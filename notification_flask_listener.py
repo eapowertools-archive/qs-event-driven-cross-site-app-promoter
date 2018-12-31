@@ -18,6 +18,8 @@ app = Flask(__name__)
 app.url_map.strict_slashes = False
 
 # any app update event will trigger this function
+
+
 @app.route("/app/update/promote", methods=['POST'])
 def app_update_promote():
     '''

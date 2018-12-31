@@ -30,14 +30,16 @@ LOCAL_SERVER = CONFIG["internal_central_node_IP"]
 
 BASE_URL = "https://" + LOCAL_SERVER + ":4242"
 
-LOG_LOCATION = QLIK_SHARE_LOCATION + "\\qs-event-driven-cross-site-app-promoter\\log\\"
+LOG_LOCATION = QLIK_SHARE_LOCATION + \
+    "\\qs-event-driven-cross-site-app-promoter\\log\\"
 if not os.path.exists(LOG_LOCATION):
     os.makedirs(LOG_LOCATION)
 
 LOG_FILE = LOG_LOCATION + "notification_creator.log"
 LOGGER = logging.getLogger(__name__)
 # rolling logs with max 2 MB files with 3 backups
-HANDLER = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=2000000, backupCount=3)
+HANDLER = logging.handlers.RotatingFileHandler(
+    LOG_FILE, maxBytes=2000000, backupCount=3)
 
 if LOG_LEVEL == "INFO":
     logging.basicConfig(level=logging.INFO)
@@ -45,7 +47,8 @@ if LOG_LEVEL == "INFO":
 else:
     logging.basicConfig(level=logging.DEBUG)
     HANDLER.setLevel(logging.DEBUG)
-FORMATTER = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+FORMATTER = logging.Formatter(
+    "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
 
@@ -68,14 +71,14 @@ NOTIFICATIONS = dict({
         "post_url": "/qrs/notification?name=app&changeType=update&xrfkey=abcdefg123456789",
         "listener_url": "http://{}:{}/app/update/promote".format(LOCAL_SERVER, PORT)
     },
-     {
-         "name":
-         "AppPublishedToReviewStream",
-         "post_url":
-         "/qrs/notification?name=app&changeType=update&propertyName=publishTime&xrfkey=abcdefg123456789",
-         "listener_url":
-         "http://{}:{}/app/publish/review".format(LOCAL_SERVER, PORT)
-     }]
+        {
+        "name":
+        "AppPublishedToReviewStream",
+        "post_url":
+        "/qrs/notification?name=app&changeType=update&propertyName=publishTime&xrfkey=abcdefg123456789",
+        "listener_url":
+        "http://{}:{}/app/publish/review".format(LOCAL_SERVER, PORT)
+    }]
 })
 
 while True:

@@ -24,14 +24,16 @@ QLIK_SHARE_LOCATION = CONFIG["qlik_share_location"]
 LOG_LEVEL = CONFIG["log_level"].lower()
 LOGGER = logging.getLogger(__name__)
 
-LOG_LOCATION = QLIK_SHARE_LOCATION + "\\qs-event-driven-cross-site-app-promoter\\log\\"
+LOG_LOCATION = QLIK_SHARE_LOCATION + \
+    "\\qs-event-driven-cross-site-app-promoter\\log\\"
 if not os.path.exists(LOG_LOCATION):
     os.makedirs(LOG_LOCATION)
 
 LOG_FILE = LOG_LOCATION + "app_update.log"
 
 # rolling logs with max 2 MB files with 3 backups
-HANDLER = logging.handlers.RotatingFileHandler(LOG_FILE, maxBytes=2000000, backupCount=3)
+HANDLER = logging.handlers.RotatingFileHandler(
+    LOG_FILE, maxBytes=2000000, backupCount=3)
 
 if LOG_LEVEL == "info":
     logging.basicConfig(level=logging.INFO)
@@ -46,15 +48,18 @@ HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
 
 # additional config
-CUSTOM_PROPERTY_NAME_PROMOTE = CONFIG["promote_on_custom_property_change"]["custom_property_name_promote"]
+CUSTOM_PROPERTY_NAME_PROMOTE = CONFIG[
+    "promote_on_custom_property_change"]["custom_property_name_promote"]
 CUSTOM_PROPERTY_NAME_PROMOTE_STREAM = CONFIG["promote_on_custom_property_change"][
     "custom_property_name_promote_stream"]
 CUSTOM_PROPERTY_NAME_PROMOTE_APPROVAL = CONFIG["promote_on_custom_property_change"][
     "custom_property_name_promote_approval"]
 VERSIONING_CUSTOM_PROP_NAME = CONFIG["promote_on_custom_property_change"]["app_version_on_change"][
     "custom_property_name"]
-LOCAL_SERVER_FQDN = CONFIG["promote_on_custom_property_change"]["local_server_FQDN"]
-REMOTE_SERVER = CONFIG["promote_on_custom_property_change"]["remote_server_FQDN"]
+LOCAL_SERVER_FQDN = CONFIG[
+    "promote_on_custom_property_change"]["local_server_FQDN"]
+REMOTE_SERVER = CONFIG["promote_on_custom_property_change"][
+    "remote_server_FQDN"]
 AUTO_UNPUBLISH_ON_APPROVE_OR_DENY = CONFIG["promote_on_custom_property_change"][
     "auto_unpublish_on_approve_or_deny"]["auto_unpublish"]
 UNPUBLISH_CUSTOM_PROP_NAME = CONFIG["promote_on_custom_property_change"][
@@ -71,8 +76,10 @@ APP_VERSION_ON_CHANGE = CONFIG["promote_on_custom_property_change"]["app_version
 LOG_ID = str(uuid.uuid4())
 
 if APP_VERSION_ON_CHANGE == "true":
-    S3_BUCKET = CONFIG["promote_on_custom_property_change"]["app_version_on_change"]["s3_bucket"]
-    S3_PREFIX = CONFIG["promote_on_custom_property_change"]["app_version_on_change"]["prefix"]
+    S3_BUCKET = CONFIG["promote_on_custom_property_change"][
+        "app_version_on_change"]["s3_bucket"]
+    S3_PREFIX = CONFIG["promote_on_custom_property_change"][
+        "app_version_on_change"]["prefix"]
 
     try:
         import boto3
@@ -85,6 +92,7 @@ if APP_VERSION_ON_CHANGE == "true":
 
         # https://boto3.amazonaws.com/v1/documentation/api/latest/_modules/boto3/s3/transfer.html
         class S3ProgressPercentage(object):
+
             def __init__(self, filename):
                 self._filename = filename
                 self._size = float(os.path.getsize(filename))
@@ -96,7 +104,7 @@ if APP_VERSION_ON_CHANGE == "true":
                     self._seen_so_far += bytes_amount
                     percentage = (self._seen_so_far / self._size) * 100
                     LOGGER.debug("%s\r%s  %s / %s  (%.2f%%)" % (LOG_ID, self._filename, self._seen_so_far,
-                                                              self._size, percentage))
+                                                                self._size, percentage))
 
     except ImportError:
         APP_VERSIONING = False
@@ -120,6 +128,7 @@ FORMATTER = logging.Formatter("%(asctime)s\t%(msecs)d\t%(name)s\t%(levelname)s\t
 HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
 
+
 def promote_app(app_id):
     '''
     Triggers every time an app is updated
@@ -133,7 +142,8 @@ def promote_app(app_id):
     app_full_status, app_full_response = qrs.app_full(s, base_url, app_id)
     qrs.close_requests_session(s)
     if app_full_status != 200:
-        LOGGER.error("%s\tSomething went wrong while trying to get app/full: %s", log_id, app_full_status)
+        LOGGER.error(
+            "%s\tSomething went wrong while trying to get app/full: %s", log_id, app_full_status)
     else:
         LOGGER.debug("%s\tGot app/full data: %s", log_id, app_full_status)
 
@@ -154,7 +164,8 @@ def promote_app(app_id):
                 modified_by_user, app_owner)
 
     app_num_custom_properties = len(app_full_response["customProperties"])
-    LOGGER.info("%s\tApp Number of Custom Properties: '%s'", log_id, app_num_custom_properties)
+    LOGGER.info("%s\tApp Number of Custom Properties: '%s'",
+                log_id, app_num_custom_properties)
 
     # if the app is not published, no action will be taken
     LOGGER.info("%s\tChecking to see if app is published", log_id)
@@ -202,17 +213,24 @@ def promote_app(app_id):
                     LOGGER.info("%s\tApp versioning custom property '%s' with the value of: '%s'",
                                 log_id, CUSTOM_PROPERTY_NAME_PROMOTE_APPROVAL, promote_approval_value)
                     promotion_approved = True
-                    LOGGER.info("%s\tPromotion has been approved by: '%s'", log_id, modified_by_user)
+                    LOGGER.info(
+                        "%s\tPromotion has been approved by: '%s'", log_id, modified_by_user)
                     if SEND_EMAIL_ON_APPROVAL_STATUS:
-                        email_approval_status_response = mailer.email_approval_status(app_name, app_owner_id, modified_by_user)
-                        LOGGER.info("%s\tEmail response: '%s'", log_id, email_approval_status_response)
+                        email_approval_status_response = mailer.email_approval_status(
+                            app_name, app_owner_id, modified_by_user)
+                        LOGGER.info("%s\tEmail response: '%s'",
+                                    log_id, email_approval_status_response)
                 elif "den" in promote_approval_value.lower():
-                    LOGGER.info("%s\tPromotion has been denied by: '%s'", log_id, modified_by_user)
+                    LOGGER.info(
+                        "%s\tPromotion has been denied by: '%s'", log_id, modified_by_user)
                     if SEND_EMAIL_ON_APPROVAL_STATUS:
-                        email_approval_status_response = mailer.email_approval_status(app_name, app_owner_id, modified_by_user, approved=False)
-                        LOGGER.info("%s\tEmail response: '%s'", log_id, email_approval_status_response)
+                        email_approval_status_response = mailer.email_approval_status(
+                            app_name, app_owner_id, modified_by_user, approved=False)
+                        LOGGER.info("%s\tEmail response: '%s'",
+                                    log_id, email_approval_status_response)
                 else:
-                    LOGGER.info("%s\tThis app will not be promoted as the approval value does not contain 'approve' or 'den'.", log_id)
+                    LOGGER.info(
+                        "%s\tThis app will not be promoted as the approval value does not contain 'approve' or 'den'.", log_id)
                     promotion_approval_bad_input = True
             elif custom_prop["definition"]["name"] == UNPUBLISH_CUSTOM_PROP_NAME:
                 unpublish_app_custom_prop_found = True
@@ -240,7 +258,8 @@ def promote_app(app_id):
                                     log_id, VERSIONING_CUSTOM_PROP_NAME, versioning_custom_prop_value)
                         app_versioning_value_true = True
                     elif custom_prop_version_value_count == 1:
-                        LOGGER.warning("%s\tThis app will not be versioned as the value must be set to 'True' (case insensitive)", log_id)
+                        LOGGER.warning(
+                            "%s\tThis app will not be versioned as the value must be set to 'True' (case insensitive)", log_id)
             elif custom_prop["definition"]["name"] == VERSIONING_CUSTOM_PROP_NAME:
                 LOGGER.info(
                     "%s\tVersioning is not enabled though the custom property '%s' is found. No action taken.",
@@ -251,13 +270,13 @@ def promote_app(app_id):
                 "%s\tAuto unpublish is not enabled and the custom property '%s' is not found. The app will not be unpublished.",
                 log_id, UNPUBLISH_CUSTOM_PROP_NAME)
 
-
         if (promotion_approved
-            and promote_custom_prop_found
-            and promote_stream_custom_prop_found
-            and custom_property_name_promote_value_count == 1):
+                and promote_custom_prop_found
+                and promote_stream_custom_prop_found
+                and custom_property_name_promote_value_count == 1):
 
-            LOGGER.info("%s\tMandatory custom properties have values, proceeding", log_id)
+            LOGGER.info(
+                "%s\tMandatory custom properties have values, proceeding", log_id)
             # lookup all of the streams by name to see if they are valid
             stream_id_list = []
             matching_stream_list = []
@@ -275,13 +294,16 @@ def promote_app(app_id):
                     LOGGER.error("%s\tSomething went wrong while trying to get the ID for stream: '%s'",
                                  log_id, stream)
                     LOGGER.error("%s\tStatus: '%s'", log_id, stream_id_status)
-                    LOGGER.debug("%s\tGet stream ID call status: '%s'", log_id, stream_id_status)
+                    LOGGER.debug("%s\tGet stream ID call status: '%s'",
+                                 log_id, stream_id_status)
                 if stream_id != None:
                     matching_stream_list.append(stream_value_list[i])
                     stream_id_list.append(stream_id)
-                    LOGGER.info("%s\tStream found: '%s'", log_id, stream_value_list[i])
+                    LOGGER.info("%s\tStream found: '%s'",
+                                log_id, stream_value_list[i])
                 else:
-                    LOGGER.warning("%s\tStream not found: '%s'", log_id, stream_value_list[i])
+                    LOGGER.warning("%s\tStream not found: '%s'",
+                                   log_id, stream_value_list[i])
 
             qrs.close_requests_session(s)
             LOGGER.info("%s\tStream ID List: '%s'", log_id, stream_id_list)
@@ -292,19 +314,22 @@ def promote_app(app_id):
 
                 s, base_url = qrs.establish_requests_session("local")
                 LOGGER.info("%s\tExporting local app", log_id)
-                export_app_status = qrs.export_app(s, base_url, app_id, app_name)
+                export_app_status = qrs.export_app(
+                    s, base_url, app_id, app_name)
                 qrs.close_requests_session(s)
                 if export_app_status != 200:
                     LOGGER.error("%s\tSomething went wrong while trying to export the app: '%s'",
                                  log_id, export_app_status)
                 else:
-                    LOGGER.debug("%s\tApp exported: '%s'", log_id, export_app_status)
+                    LOGGER.debug("%s\tApp exported: '%s'",
+                                 log_id, export_app_status)
 
                 if "overwrite" in promote_value.lower() and stream_existing_count >= 1:
                     LOGGER.info(
                         "%s\tApps that exist with the same name in target streams will be overwritten. If they do not exist, they will be created.", log_id)
                     s, base_url = qrs.establish_requests_session("remote")
-                    LOGGER.info("%s\tLooking up app IDs to be overwritten on the remote server by name", log_id)
+                    LOGGER.info(
+                        "%s\tLooking up app IDs to be overwritten on the remote server by name", log_id)
                     remote_app_id_status, remote_app_id_json = qrs.get_remote_app_ids_by_name(
                         s, base_url, app_name)
                     num_remote_app_ids = len(remote_app_id_json)
@@ -313,9 +338,11 @@ def promote_app(app_id):
                         LOGGER.error("%s\tSomething went wrong when looking up apps by name: '%s'",
                                      log_id, remote_app_id_status)
                     else:
-                        LOGGER.debug("%s\tCall to look up apps status: '%s'", log_id, remote_app_id_status)
+                        LOGGER.debug(
+                            "%s\tCall to look up apps status: '%s'", log_id, remote_app_id_status)
 
-                    LOGGER.info("%s\tApp IDs found with matching names: '%s'", log_id, num_remote_app_ids)
+                    LOGGER.info(
+                        "%s\tApp IDs found with matching names: '%s'", log_id, num_remote_app_ids)
 
                     remote_app_detail_list = []
                     matching_app_ids = []
@@ -332,7 +359,8 @@ def promote_app(app_id):
 
                                 for sid in stream_id_list:
                                     if sid == remote_stream_id:
-                                        matching_published_app_ids.append(remote_app_id)
+                                        matching_published_app_ids.append(
+                                            remote_app_id)
                                         remote_app_detail_list.append({
                                             "app_id":
                                             remote_app_id,
@@ -345,25 +373,31 @@ def promote_app(app_id):
                                         })
 
                         qrs.close_requests_session(s)
-                        num_remote_found_target_published = len(remote_app_detail_list)
+                        num_remote_found_target_published = len(
+                            remote_app_detail_list)
 
-                        LOGGER.info("%s\tMatching App IDs: '%s'", log_id, matching_app_ids)
+                        LOGGER.info("%s\tMatching App IDs: '%s'",
+                                    log_id, matching_app_ids)
                         LOGGER.info(
                             "%s\tMatching apps with matching names that are published to target streams: '%s'",
                             log_id, matching_published_app_ids)
-                        LOGGER.debug("%s\tApp info: '%s'", log_id, remote_app_detail_list)
+                        LOGGER.debug("%s\tApp info: '%s'", log_id,
+                                     remote_app_detail_list)
 
                     left_over_stream_id_list = stream_id_list
                     if num_remote_found_target_published >= 1:
                         s, base_url = qrs.establish_requests_session("remote")
-                        LOGGER.info("%s\tUploading app onto remote server and getting the new ID", log_id)
-                        upload_app_status, new_app_id = qrs.upload_app(s, base_url, app_name)
+                        LOGGER.info(
+                            "%s\tUploading app onto remote server and getting the new ID", log_id)
+                        upload_app_status, new_app_id = qrs.upload_app(
+                            s, base_url, app_name)
                         if upload_app_status != 201:
                             LOGGER.error(
                                 "%s\tSomething went wrong while trying to upload the app: '%s'",
                                 log_id, upload_app_status)
                         else:
-                            LOGGER.debug("%s\tApp uploaded: '%s'", log_id, upload_app_status)
+                            LOGGER.debug("%s\tApp uploaded: '%s'",
+                                         log_id, upload_app_status)
                         qrs.close_requests_session(s)
 
                         s, base_url = qrs.establish_requests_session("remote")
@@ -371,8 +405,8 @@ def promote_app(app_id):
                             "%s\tOverwriting existing apps with matching names published to target streams", log_id
                         )
                         for remote_app_id in remote_app_detail_list:
-                            app_replaced_status =qrs. app_replace(s, base_url, new_app_id,
-                                                              remote_app_id["app_id"])
+                            app_replaced_status = qrs. app_replace(s, base_url, new_app_id,
+                                                                   remote_app_id["app_id"])
                             qrs.close_requests_session(s)
                             if app_replaced_status != 200:
                                 LOGGER.error(
@@ -390,7 +424,8 @@ def promote_app(app_id):
                                 pass
                         qrs.close_requests_session(s)
 
-                        LOGGER.info("%s\tDeleting application that was used to overwrite", log_id)
+                        LOGGER.info(
+                            "%s\tDeleting application that was used to overwrite", log_id)
                         s, base_url = qrs.establish_requests_session("remote")
                         qrs.app_delete(s, base_url, new_app_id)
                         if app_replaced_status != 200:
@@ -398,7 +433,8 @@ def promote_app(app_id):
                                 "%s\tSomething went wrong while trying to delete the app: '%s'",
                                 log_id, app_replaced_status)
                         else:
-                            LOGGER.debug("%s\tSuccessfully deleted the app: '%s'", log_id, app_replaced_status)
+                            LOGGER.debug(
+                                "%s\tSuccessfully deleted the app: '%s'", log_id, app_replaced_status)
                         qrs.close_requests_session(s)
 
                     if len(left_over_stream_id_list) >= 1:
@@ -408,19 +444,23 @@ def promote_app(app_id):
                         for stream_id in left_over_stream_id_list:
                             i += 1
                             if stream_id != None:
-                                s, base_url = qrs.establish_requests_session("remote")
+                                s, base_url = qrs.establish_requests_session(
+                                    "remote")
                                 LOGGER.info(
                                     "%s\tUploading app onto remote server and getting the new ID", log_id)
-                                upload_app_status, new_app_id = qrs.upload_app(s, base_url, app_name)
+                                upload_app_status, new_app_id = qrs.upload_app(
+                                    s, base_url, app_name)
                                 if upload_app_status != 201:
                                     LOGGER.error(
                                         "%s\tSomething went wrong while trying to upload the app: '%s'",
                                         log_id, upload_app_status)
                                 else:
-                                    LOGGER.debug("%s\tApp uploaded: '%s'", log_id, upload_app_status)
+                                    LOGGER.debug(
+                                        "%s\tApp uploaded: '%s'", log_id, upload_app_status)
                                 qrs.close_requests_session(s)
 
-                                s, base_url = qrs.establish_requests_session("remote")
+                                s, base_url = qrs.establish_requests_session(
+                                    "remote")
                                 LOGGER.info("%s\tPublishing app '%s' to stream '%s'", log_id, new_app_id,
                                             stream_id)
                                 app_published_status = qrs.publish_to_stream(
@@ -431,7 +471,8 @@ def promote_app(app_id):
                                         "%s\tSomething went wrong while trying to publish the app to: '%s', '%s'",
                                         log_id, stream_id, app_published_status)
                                 else:
-                                    LOGGER.debug("%s\tApp published status: '%s'", log_id, app_published_status)
+                                    LOGGER.debug(
+                                        "%s\tApp published status: '%s'", log_id, app_published_status)
                                     LOGGER.info("%s\tSuccessfully published app '%s' to stream '%s'",
                                                 log_id, new_app_id, stream_id)
                                     app_promoted = True
@@ -439,9 +480,11 @@ def promote_app(app_id):
                             else:
                                 pass
 
-                # the app will not overwrite an app unless the target stream exists
+                # the app will not overwrite an app unless the target stream
+                # exists
                 elif "overwrite" in promote_value.lower():
-                    LOGGER.info("%s\tApp is set to overwrite, but no target streams exist. Exiting.", log_id)
+                    LOGGER.info(
+                        "%s\tApp is set to overwrite, but no target streams exist. Exiting.", log_id)
 
                 # if the app is set to duplicate and if any target streams exist on the server, new apps will be uploaded and published
                 # to them, regardless if any apps previously existed or not
@@ -453,50 +496,62 @@ def promote_app(app_id):
                     for stream_id in stream_id_list:
                         i += 1
                         if stream_id != None:
-                            s, base_url = qrs.establish_requests_session("remote")
-                            LOGGER.info("%s\tUploading app onto remote server and getting the new ID", log_id)
-                            upload_app_status, new_app_id = qrs.upload_app(s, base_url, app_name)
+                            s, base_url = qrs.establish_requests_session(
+                                "remote")
+                            LOGGER.info(
+                                "%s\tUploading app onto remote server and getting the new ID", log_id)
+                            upload_app_status, new_app_id = qrs.upload_app(
+                                s, base_url, app_name)
                             if upload_app_status != 201:
                                 LOGGER.error(
                                     "%s\tSomething went wrong while trying to upload the app: '%s'",
                                     log_id, upload_app_status)
                             else:
-                                LOGGER.debug("%s\tApp uploaded: '%s'", log_id, upload_app_status)
+                                LOGGER.debug("%s\tApp uploaded: '%s'",
+                                             log_id, upload_app_status)
                             qrs.close_requests_session(s)
 
-                            s, base_url = qrs.establish_requests_session("remote")
-                            LOGGER.info("%s\tPublishing app to: '%s'", log_id, stream_id)
+                            s, base_url = qrs.establish_requests_session(
+                                "remote")
+                            LOGGER.info(
+                                "%s\tPublishing app to: '%s'", log_id, stream_id)
                             app_published_status = qrs.publish_to_stream(s, base_url, new_app_id,
-                                                                     stream_id)
+                                                                         stream_id)
                             qrs.close_requests_session(s)
                             if app_published_status != 200:
                                 LOGGER.error("%s\tSomething went wrong while trying to publish: '%s'",
                                              log_id, app_published_status)
                             else:
-                                LOGGER.debug("%s\tApp published status: '%s'", log_id, app_published_status)
+                                LOGGER.debug(
+                                    "%s\tApp published status: '%s'", log_id, app_published_status)
                                 LOGGER.info("%s\tSuccessfully published app '%s' to stream '%s'",
                                             log_id, new_app_id, stream_id)
                                 app_promoted = True
                                 final_id_list.append(new_app_id)
                         else:
-                            LOGGER.debug("%s\tCould not find stream: '%s'", log_id, stream_id)
+                            LOGGER.debug(
+                                "%s\tCould not find stream: '%s'", log_id, stream_id)
 
                 elif "duplicate" in promote_value.lower():
-                    LOGGER.info("%s\tApp set to duplicate, but no target streams exist. Exiting.", log_id)
+                    LOGGER.info(
+                        "%s\tApp set to duplicate, but no target streams exist. Exiting.", log_id)
                 else:
                     LOGGER.info("%s\tSomething went wrong. Exiting.", log_id)
 
-                # if the app successfully published any apps, it will consider it a success
+                # if the app successfully published any apps, it will consider
+                # it a success
                 if app_promoted:
                     # check if versioning is enabled
                     # if so, push to s3
-                    LOGGER.info("%s\tApp promoted from:'%s' to '%s'", log_id, LOCAL_SERVER_FQDN, REMOTE_SERVER)
+                    LOGGER.info("%s\tApp promoted from:'%s' to '%s'",
+                                log_id, LOCAL_SERVER_FQDN, REMOTE_SERVER)
                     if APP_VERSIONING and app_versioning_value_true:
                         LOGGER.info("%s\tVersioning the app", log_id)
                         app_name_no_data = app_name + "-Template"
 
                         s, base_url = qrs.establish_requests_session("local")
-                        LOGGER.info("%s\tExporting local app without data for versioning", log_id)
+                        LOGGER.info(
+                            "%s\tExporting local app without data for versioning", log_id)
                         export_app_status = qrs.export_app(
                             s, base_url, app_id, app_name_no_data, skip_data=True)
                         qrs.close_requests_session(s)
@@ -505,7 +560,8 @@ def promote_app(app_id):
                                 "%s\tSomething went wrong while trying to export the app without data: '%s'",
                                 log_id, export_app_status)
                         else:
-                            LOGGER.debug("%s\tApp exported without data: '%s'", log_id, export_app_status)
+                            LOGGER.debug(
+                                "%s\tApp exported without data: '%s'", log_id, export_app_status)
 
                         LOGGER.info("%s\tAttempting to connect s3", log_id)
                         app_file_name = app_name_no_data + ".qvf"
@@ -524,13 +580,17 @@ def promote_app(app_id):
                                     S3_BUCKET,
                                     key,
                                     callback=S3ProgressPercentage(app_abs_path))
-                                LOGGER.info("%s\tApp uploaded successfully to '%s'", log_id, S3_BUCKET)
+                                LOGGER.info(
+                                    "%s\tApp uploaded successfully to '%s'", log_id, S3_BUCKET)
                                 try:
-                                    LOGGER.info("%s\tGetting the version id of the s3 object", log_id)
+                                    LOGGER.info(
+                                        "%s\tGetting the version id of the s3 object", log_id)
                                     s3 = boto3.resource("s3")
-                                    app_s3_version_id = str(s3.Object(S3_BUCKET, key).version_id)
+                                    app_s3_version_id = str(
+                                        s3.Object(S3_BUCKET, key).version_id)
                                     description += "\n\nS3 Version ID: " + app_s3_version_id
-                                    LOGGER.info("%s\tApp s3 version id: '%s'", log_id, app_s3_version_id)
+                                    LOGGER.info(
+                                        "%s\tApp s3 version id: '%s'", log_id, app_s3_version_id)
                                     template_app_deleted_status = qrs.delete_local_app_export(
                                         app_name_no_data)
                                     if not template_app_deleted_status:
@@ -545,16 +605,19 @@ def promote_app(app_id):
                                         "%s\tSomething went wrong while getting the version id from s3: '%s'",
                                         log_id, error)
                             except Exception as error:
-                                LOGGER.error("%s\tCould not upload the app: '%s'", log_id, error)
+                                LOGGER.error(
+                                    "%s\tCould not upload the app: '%s'", log_id, error)
                         except Exception as error:
-                            LOGGER.error("%s\tCould not connect to s3: '%s'", log_id, error)
+                            LOGGER.error(
+                                "%s\tCould not connect to s3: '%s'", log_id, error)
                             LOGGER.error(
                                 "%s\tPlease ensure that your server has programmatic access such as an IAM role to the bucket enabled", log_id
                             )
 
                     # update the description for each of the published apps
                     s, base_url = qrs.establish_requests_session("remote")
-                    LOGGER.info("%s\tAdding a description to the remote app(s)", log_id)
+                    LOGGER.info(
+                        "%s\tAdding a description to the remote app(s)", log_id)
                     for published_app_id in final_id_list:
                         # add a description to the remote app that
                         # states who promoted it and when
@@ -566,25 +629,28 @@ def promote_app(app_id):
                                 log_id, description_status_code)
                         else:
                             LOGGER.info("%s\tDescription successfully added to the app: '%s', '%s'",
-                                         log_id, description_status_code, published_app_id)
+                                        log_id, description_status_code, published_app_id)
                     qrs.close_requests_session(s)
 
                     if AUTO_UNPUBLISH or unpublish_app_value_true:
-                        LOGGER.info("%s\tDuplicating the local application: '%s'", log_id, app_name)
+                        LOGGER.info(
+                            "%s\tDuplicating the local application: '%s'", log_id, app_name)
                         s, base_url = qrs.establish_requests_session("local")
                         duplicated_app_status_code, duplicate_app_id = qrs.duplicate_app(
                             s, base_url, app_id, app_name)
                         qrs.close_requests_session(s)
                         if duplicated_app_status_code != 201:
                             LOGGER.error("%s\tSomething went wrong while duplicating the app: '%s'",
-                                        log_id, duplicated_app_status_code)
+                                         log_id, duplicated_app_status_code)
                         else:
-                            LOGGER.info("%s\tSuccessfully duplicated app: '%s'", log_id, app_name)
+                            LOGGER.info(
+                                "%s\tSuccessfully duplicated app: '%s'", log_id, app_name)
 
-                        LOGGER.info("%s\tChanging the owner of the duplicated app back to '%s'", log_id, app_owner)
+                        LOGGER.info(
+                            "%s\tChanging the owner of the duplicated app back to '%s'", log_id, app_owner)
                         s, base_url = qrs.establish_requests_session("local")
                         change_app_owner_status = qrs.change_app_owner(s, base_url, duplicate_app_id,
-                                                                app_owner_id)
+                                                                       app_owner_id)
                         qrs.close_requests_session(s)
 
                         if change_app_owner_status != 200:
@@ -592,7 +658,8 @@ def promote_app(app_id):
                                 "%s\tSomething went wrong while trying to change the app owner: '%s'",
                                 log_id, change_app_owner_status)
                         else:
-                            LOGGER.info("%s\tSuccessfully changed the app owner to: '%s'", log_id, app_owner)
+                            LOGGER.info(
+                                "%s\tSuccessfully changed the app owner to: '%s'", log_id, app_owner)
 
                         LOGGER.info("%s\tDeleting the published app", log_id)
                         s, base_url = qrs.establish_requests_session("local")
@@ -604,40 +671,48 @@ def promote_app(app_id):
                                 "%s\tSomething went wrong while trying to delete the app with id: '%s'",
                                 log_id, app_id)
                         else:
-                            LOGGER.info("%s\tSuccessfully deleted the app with id: '%s'", log_id, app_id)
+                            LOGGER.info(
+                                "%s\tSuccessfully deleted the app with id: '%s'", log_id, app_id)
 
                     # delete the local copy of the exported app
-                    local_app_deleted_status = qrs.delete_local_app_export(app_name)
+                    local_app_deleted_status = qrs.delete_local_app_export(
+                        app_name)
                     if not local_app_deleted_status:
                         LOGGER.error("%s\tSomething went wrong while trying to delete the app: '%s'",
                                      log_id, local_app_deleted_status)
                     else:
-                        LOGGER.info("%s\tLocal app deleted: '%s'", log_id, local_app_deleted_status)
+                        LOGGER.info("%s\tLocal app deleted: '%s'",
+                                    log_id, local_app_deleted_status)
 
             else:
-                LOGGER.warning("%s\tNo matching streams exist on the server. Exiting.", log_id)
+                LOGGER.warning(
+                    "%s\tNo matching streams exist on the server. Exiting.", log_id)
 
         elif (not promotion_approved
-            and not promotion_approval_empty
-            and not promotion_approval_bad_input
-            and (AUTO_UNPUBLISH or unpublish_app_value_true)):
+              and not promotion_approval_empty
+              and not promotion_approval_bad_input
+              and (AUTO_UNPUBLISH or unpublish_app_value_true)):
 
-            LOGGER.info("%s\tApplication approval for '%s' has been denied", log_id, app_name)
-            LOGGER.info("%s\tDuplicating the local application: '%s'", log_id, app_name)
+            LOGGER.info(
+                "%s\tApplication approval for '%s' has been denied", log_id, app_name)
+            LOGGER.info(
+                "%s\tDuplicating the local application: '%s'", log_id, app_name)
             s, base_url = qrs.establish_requests_session("local")
             duplicated_app_status_code, duplicate_app_id = qrs.duplicate_app(
                 s, base_url, app_id, app_name)
             qrs.close_requests_session(s)
             if duplicated_app_status_code != 201:
                 LOGGER.error("%s\tSomething went wrong while duplicating the app: '%s'",
-                                log_id, duplicated_app_status_code)
+                             log_id, duplicated_app_status_code)
             else:
-                LOGGER.info("%s\tSuccessfully duplicated app: '%s'", log_id, app_name)
+                LOGGER.info("%s\tSuccessfully duplicated app: '%s'",
+                            log_id, app_name)
 
-            LOGGER.info("%s\tChanging the owner of the duplicated app back to '%s'", log_id, app_owner)
+            LOGGER.info(
+                "%s\tChanging the owner of the duplicated app back to '%s'", log_id, app_owner)
             s, base_url = qrs.establish_requests_session("local")
             change_app_owner_status = qrs.change_app_owner(s, base_url, duplicate_app_id,
-                                                        app_owner_id)
+                                                           app_owner_id)
             qrs.close_requests_session(s)
 
             if change_app_owner_status != 200:
@@ -645,7 +720,8 @@ def promote_app(app_id):
                     "%s\tSomething went wrong while trying to change the app owner: '%s'",
                     log_id, change_app_owner_status)
             else:
-                LOGGER.info("%s\tSuccessfully changed the app owner to: '%s'", log_id, app_owner)
+                LOGGER.info(
+                    "%s\tSuccessfully changed the app owner to: '%s'", log_id, app_owner)
 
             LOGGER.info("%s\tDeleting the published app", log_id)
             s, base_url = qrs.establish_requests_session("local")
@@ -657,7 +733,8 @@ def promote_app(app_id):
                     "%s\tSomething went wrong while trying to delete the app with id: '%s'",
                     log_id, app_id)
             else:
-                LOGGER.info("%s\tSuccessfully deleted the app with id: '%s'", log_id, app_id)
+                LOGGER.info(
+                    "%s\tSuccessfully deleted the app with id: '%s'", log_id, app_id)
 
         elif custom_property_name_promote_value_count > 1:
             LOGGER.error("%s\tThere can only be a single value in the custom property: '%s'. Exiting.",
