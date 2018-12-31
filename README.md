@@ -14,7 +14,7 @@
 - [About](#about)
 - [Scenario & Workflow](#scenario-and-workflow)
 - [Architecture & Components](#architecture-and-components)
-- [Installation & Configuration](#installation-and-configuration)
+- [Installation & Configuration (Including Video)](#installation-and-configuration)
 - [Creating Windows Services](#creating-windows-services)
  
 ## About
@@ -48,7 +48,10 @@ For example, if a user selects the value of _'Approve'_ in the _PromotionApprova
 ![workflow3.4](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_promote_to_stream.png)
 ![workflow3.5](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_promotion_s3_versioning.png)
 ![workflow3.6](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_final_custom_props.png)
-
+4. _Sales Rep_ receives either an _approval_ or _denial_ email depending on what _Sales Manager_ decided.
+![workflow4.1](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/approval_email.png)
+![workflow4.2](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/denail_email.png)
+5. _Optionally_, depending on how you've configured the program, it will duplicate the app and assign it back to the owner, and then delete the published app from the "Sales" stream -- ultimately _unpublishing_ it. This is the default behavior, but it can be modified if the app should stay in the stream.
 
 **Versioning in Amazon S3**
 As a part of this workflow, I've also chosen to allow the option to upload the app without data to an S3 bucket with versioning enabled. Enabling this functionality illustrates how to directly couple promotion of applications across tiers in Qlik Sense to versioning of applications. This can be configured easily in the config.json file, however it is setup assuming that your central node has programmatic access to the S3 bucket, e.g. an IAM Role or otherwise. This feature is toggled off by default. You could choose to use your AWS access key id and secret access key, but to do so would require some lightweight modifications to the code in _Modules/app_promote.py_. Right now you will see:
@@ -70,7 +73,7 @@ Please reference the boto3 docs here: https://boto3.amazonaws.com/v1/documentati
 **Promotion Process**
 Regarding the promotion specifically, the high-level concept is that you would select a single value in "PromoteToServer", e.g. 'Test Server - Duplicate', and then select 1-n streams from the "PromoteToStream" custom property. If the streams exist on the remote server, for each stream that exists, the application will export the app, upload it to the new server, and publish it. If the next cycle around, the user then selects 'Test Server - Overwrite', selects 1-n streams, then application would overwrite any existing applications on the server that match by name in the requested streams. If the streams exist on the server but there aren't any matching apps in it, it will upload the app and publish the app to those streams as well. There are additional custom properties regarding approval, versioning, and unpublishing that further enhance this process -- those are detailed below.
 
-![workflow](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/QRS+Notification+API+-+App+Promotion+Example+Workflow.png)
+![workflow](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/new_workflow.png)
 
 
 ## Architecture and Components
@@ -83,18 +86,22 @@ Two Python programs that should be run as windows services on system startup (no
 
 
 ## Installation and Configuration
+**This must be installed on the Central Node of your Qlik Sense site.**
+
+**Installation Video**
+[![installation-video](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/Qlik.png)](https://www.youtube.com/watch?v=_WrqiLIlBis)
+
 1. This application is written in Python 3 and Flask requires Python 3.4+. 
-2. The user that is running the Python programs needs read/write access to the Qlik Sense file share and needs to have the ability to execute OS operations such as create/delete files, etc. If possible, it is easiest to run these programs/services as the Qlik Sense service account.
-3. Port 4242 open on the remote server (and local server if you are running this somewhere other than the Qlik Sense server of the lower tier, which is assumed). Port 4242 is required as we are leveraging certificates to securely communicate with the QRS API, as opposed to going over the proxy. The script could be modified to leverage NTLM, but that is not included in this example.
-4. Once installed, run: ```pip install -r /path/to/requirements.txt``` or just: ```pip install requests flask boto3```
+2. Port 4242 open on the remote server. Port 4242 is required as we are leveraging certificates to securely communicate with the QRS API, as opposed to going over the proxy. The script could be modified to leverage NTLM, but that is not included in this example. No additional ports need to be opened on the Central Node, as that is where this application will be installed.
+3. Once installed, run: ```pip install -r /path/to/requirements.txt``` or just: ```pip install requests flask boto3```
     - Note that `boto3` is only required if you have configured S3 versioning
-5. Export certificates from the local Qlik site's QMC with the server name and no password, then do the same for the remote server. Note that the machine name won't technically make any difference, as the program is not configured to verify the certificates.
+4. Export certificates from the local Qlik site's QMC with the server name and no password, then do the same for the remote server
 
 ![export-certs](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/export_certs.png)
 
-6. Take the client.pem and client_key.pem from the local site export and place them in the `/Certificates/LocalServerCerts/` folder
-7. Take the client.pem and client_key.pem from the remote site export and place them in the `/Certificates/RemoteServerCerts/` folder
-8. Create the following custom properties in the local server's QMC __(note that many of them start with 'Promot*', as this is key to a security rule that controls the visibility of custom properties by their names. You can change the names of these custom properties as they are referencing in a config, but ensure that any of the properties below that begin with 'Promot*' follow a similar naming convention that can be reflected in the associated security rule as well.)__:
+5. Take the client.pem and client_key.pem from the local site export and place them in the `/Certificates/LocalServerCerts/` folder
+6. Take the client.pem and client_key.pem from the remote site export and place them in the `/Certificates/RemoteServerCerts/` folder
+7. Create the following custom properties in the local server's QMC __(note that many of them start with 'Promot*', as this is key to a security rule that controls the visibility of custom properties by their names. You can change the names of these custom properties as they are referencing in a config, but ensure that any of the properties below that begin with 'Promot*' follow a similar naming convention that can be reflected in the associated security rule as well.)__:
     - PromoteToServer (**Apps**)
         - Contains an arbitrary name of your Qlik Sense site that you want the option of promoting to, as well as a the string 'Overwrite' or 'Duplicate'. Note that this custom property can only serve a single Qlik Sense site by default.
         - Example values:
@@ -129,11 +136,11 @@ Two Python programs that should be run as windows services on system startup (no
     - CanPromoteGroup (**Streams, Users**)
         - Contains _Group_ values that would be defined within your organization. This can just be directed to streams if you want to use something like AD groups instead with user.group. Note that this should be a higher privilege than your standard chosen group for _Read_ access. For example, users with the group of _Sales_ may have read access to the "Sales" stream, however you might only want users with the group of _SalesAdmins_ to have access to promote apps cross-site from "Sales"
         - Example values
-            - `HRAdmins`
-            - `MarketingAdmins`
-            - `SalesAdmins`
+            - `HR_Admin`
+            - `Marketing_Admin`
+            - `Sales_Admin`
         - The purpose for this additional custom property is to control _where_ a non-owner of an application that has the _"CanPromote"_ custom property can promote _from_. George might have the ability to see the _Sales_ stream and the _Marketing_ stream, but you might only want him to be able to promote apps from _Sales_. This custom property is used in a custom security rule to enable that functionality.
-        - ![can-promote-group](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/canPromoteGroup.png)
+        - ![can-promote-group](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/canPromoteGroupNew2.png)
     - EmailAlertOnPublishTo (**Streams**) *__Optional__*
         - Contains the value `True`
         - If you have email alerts enabled in the config, this is the custom property that the program checks for whenever an app is published to a stream. If the stream has this custom property, alerts will be sent to the email addresses associated with the stream's ID in _ApprovalStreamsToEmailAddressMap.csv_.
@@ -143,7 +150,7 @@ Two Python programs that should be run as windows services on system startup (no
                     cb2f9262-daf5-4131-ba4f-8c857caeca34, them@who.org
                     946d762a-6573-4bd7-86de-c8e2ce26b04d, bark@dog.woof
     - ![email-alert-on-publish-to](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/emailAlertOnPublishTo.png)
-9. Security Rules (*__Optional - Controls who can promote and from where__*)
+8. Security Rules
     - `OwnerUpdateApp`: **Disabled**
     - `ReadCustomProperties`: **Disabled**
     - New Rule #1
@@ -167,57 +174,52 @@ Two Python programs that should be run as windows services on system startup (no
         - Conditions: `((user.@Group=resource.@Group))`
         - Context: `Both in hub and QMC`
         ![securityRule#3](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/securityRule3.png)
-10. Edit the config.json file:
+9. Edit the config.json file:
 
 - ```
     {
-        "log_level"             : "INFO",
-        "port"                  : "5000",
-        "qlik_share_location"   : "\\\\QLIK-DEV\\QlikShare",
-        "promote_on_custom_property_change" : {
-            "custom_property_name_promote"              : "PromoteToServer",
-            "custom_property_name_promote_stream"       : "PromoteToStream",
-            "custom_property_name_promote_approval"     : "PromotionApproval",
-            "auto_unpublish_on_approve_or_deny" : {
-                "auto_unpublish"                        : "true",
-                "custom_property_name"                  : "PromotionUnpublish"
-            },
-            "local_server_FQDN"                         : "qlik-dev-devops.company.com",
-            "remote_server_FQDN"                        : "qlik-test-devops.company.com",
-            "user_directory"                            : "INTERNAL",
-            "user_id"                                   : "sa_api",
-            "email_config": {
-                "promotion_email_alerts"                        : "false",
-                "custom_property_name_stream_alert_on_publish"  : "EmailAlertOnPublishTo",
-                "email_UDC_attribute_exists"                    : "false",
-                "promotion_sender_email"                        : "you@gmail.com",
-                "promotion_sender_pass"                         : "hARdC@d3dPa33w@RdsR@Ck!",
-                "promotion_SMTP"                                : "smtp.gmail.com",
-                "promotion_SMTP_port"                           : "587"
-            },
-            "app_version_on_change" : {
-                "enabled"               : "false",
-                "custom_property_name"  : "PromotionS3Versioning",
-                "s3_bucket"             : "notification-api-app-versioning",
-                "prefix"                : "PromotedToTest/"
-            }
-        }
+    	"log_level" 				: "INFO",
+    	"internal_central_node_IP"	: "172.31.2.127",			
+    	"port"	   					: "5000",
+    	"qlik_share_location"		: "\\\\QLIK-DEV-DEMO\\QlikShare",
+    	"promote_on_custom_property_change" : {
+    		"custom_property_name_promote" 				: "PromoteToServer",
+    		"custom_property_name_promote_stream" 		: "PromoteToStream",
+    		"custom_property_name_promote_approval" 	: "PromotionApproval",
+    		"auto_unpublish_on_approve_or_deny"	: {
+    			"auto_unpublish"						: "true",
+    			"custom_property_name"					: "PromotionUnpublish"
+    		},
+    		"local_server_FQDN"							: "qlik-dev-demo",
+    		"remote_server_FQDN" 						: "qlik-test-devops.qlikpoc.com",
+    		"user_directory" 							: "INTERNAL",
+    		"user_id" 									: "sa_api",
+    		"email_config": {
+    			"promotion_email_alerts"						: "false",
+    			"custom_property_name_stream_alert_on_publish"	: "EmailAlertOnPublishTo",
+    			"email_UDC_attribute_exists"					: "false",
+    			"promotion_sender_email"						: "you@gmail.com",
+    			"promotion_sender_pass"							: "h@rdc0dedp@SSw0rd",
+    			"promotion_SMTP"								: "smtp.gmail.com",
+    			"promotion_SMTP_port"							: "587"
+    		},
+    		"app_version_on_change" : {
+    			"enabled" 				: "false",
+    			"custom_property_name" 	: "PromotionS3Versioning",
+    			"s3_bucket" 	 		: "notification-api-app-versioning",
+    			"prefix"				: "PromotedToTest/"
+    		}
+    	}
     }
     ```
-11. For initial testing, manually run _notification_flask_listener.py_ and _notification_creator.py_. You can double click them, but if there are errors they will just immediately close. To propertly debug and view any potential errors, open a command prompt, navigate to the directory, and execute: `python notification_flask_listener.py` and the same for the other program.
-12. Create windows services out of the above two py files to run on system startup using something like NSSM (instructions below) – be sure to stop both of your manually run py files before running the services
+10. For initial testing, manually run _notification_flask_listener.py_ and _notification_creator.py_
+11. Create windows services out of the above two py files to run on system startup using something like NSSM (instructions below) – be sure to stop both of your manually run py files before running the services. Make sure the services are running with an account that is an administrator and that the account has access to the Qlik Sense fileshare location - as that is where it writes the logs to (see config.json above). You can always opt to run the services as the Qlik service account if the account is also an administrator (which it most commonly is).
 
 ## Creating Windows Services
-I personally use NSSM to easily create windows services. You can follow the below examples, referencing your own Python path and directory path, running nssm from an elevated command prompt with the command nssm install {YourServiceName}
+I personally use NSSM to easily create windows services. You can follow the below examples, referencing your own Python path and directory path, running nssm from an elevated command prompt with the command nssm install <YourServiceName>
 
-The default path for python.exe is `C:\Users\{USER}\AppData\Local\Programs\Python\{PythonVersion}\python.exe`
+The default path for python.exe is `C:\Users\<USER>\AppData\Local\Programs\Python\{PythonVersion}\python.exe`
 
-![nssm-flask-listener](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/nssm_flask_listener.png)
+![nssm-flask-listener](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/notification_flask_listener.png)
 
-![nssm-flask-listener](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/nssm_notification_creator.png)
-
-![nssm-services](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/nssm_Services.png)
-
-
-
-Be sure to then start the services.
+![nssm-flask-listener](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/notification_creator.png)
