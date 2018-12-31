@@ -1,7 +1,7 @@
 # Status
 [![Project Status: Active – The project has reached a stable, usable state and is being actively developed.](https://www.repostatus.org/badges/latest/active.svg)](https://www.repostatus.org/#active)
 
-# QRS API Notification Example DevOps Workflow -- Promoting Apps Cross Site with Versioning in Amazon S3
+# QRS API Notification Example DevOps Workflow -- Promoting Apps Cross Site with Approvals, Email Alerts, and Versioning
 
 **This repository is intended to be used as an example and should not be used in Production**
 
@@ -54,6 +54,7 @@ For example, if a user selects the value of _'Approve'_ in the _PromotionApprova
 5. _Optionally_, depending on how you've configured the program, it will duplicate the app and assign it back to the owner, and then delete the published app from the "Sales" stream -- ultimately _unpublishing_ it. This is the default behavior, but it can be modified if the app should stay in the stream.
 
 **Versioning in Amazon S3**
+
 As a part of this workflow, I've also chosen to allow the option to upload the app without data to an S3 bucket with versioning enabled. Enabling this functionality illustrates how to directly couple promotion of applications across tiers in Qlik Sense to versioning of applications. This can be configured easily in the config.json file, however it is setup assuming that your central node has programmatic access to the S3 bucket, e.g. an IAM Role or otherwise. This feature is toggled off by default. You could choose to use your AWS access key id and secret access key, but to do so would require some lightweight modifications to the code in _Modules/app_promote.py_. Right now you will see:
 
 ```
@@ -71,6 +72,7 @@ s3 = boto3.client(
 Please reference the boto3 docs here: https://boto3.amazonaws.com/v1/documentation/api/latest/guide/configuration.html
 
 **Promotion Process**
+
 Regarding the promotion specifically, the high-level concept is that you would select a single value in "PromoteToServer", e.g. 'Test Server - Duplicate', and then select 1-n streams from the "PromoteToStream" custom property. If the streams exist on the remote server, for each stream that exists, the application will export the app, upload it to the new server, and publish it. If the next cycle around, the user then selects 'Test Server - Overwrite', selects 1-n streams, then application would overwrite any existing applications on the server that match by name in the requested streams. If the streams exist on the server but there aren't any matching apps in it, it will upload the app and publish the app to those streams as well. There are additional custom properties regarding approval, versioning, and unpublishing that further enhance this process -- those are detailed below.
 
 ![workflow](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/new_workflow.png)
