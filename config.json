@@ -1,18 +1,34 @@
 {
-	"logLevel" : "INFO",
-	"promoteOnCustomPropertyChange" : {
-		"customPropertyNamePromote" 		: "PromoteToServer",
-		"customPropertyNamePromoteStream" 	: "PromoteToStream",
-		"appPromotedTagID" 					: "f37f69c7-36a6-4422-b1bd-2dd136d7efb4",
-		"localServer" 						: "dev.company.com",
-		"remoteServer" 						: "prod.company.com",
-		"userDirectory" 					: "INTERNAL",
-		"userId" 							: "sa_api",
-		"appVersionOnChange" : {
+	"log_level" 				: "INFO",
+	"internal_central_node_IP"	: "10.27.0.143",			
+	"port"	   					: "5000",
+	"qlik_share_location"		: "\\\\QLIK-CENTRAL\\QlikShare",
+	"promote_on_custom_property_change" : {
+		"custom_property_name_promote" 				: "PromoteToServer",
+		"custom_property_name_promote_stream" 		: "PromoteToStream",
+		"custom_property_name_promote_approval" 	: "PromotionApproval",
+		"auto_unpublish_on_approve_or_deny"	: {
+			"auto_unpublish"						: "true",
+			"custom_property_name"					: "PromotionUnpublish"
+		},
+		"local_server_FQDN"							: "qlik-dev.company.com",
+		"remote_server_FQDN" 						: "qlik-test.company.com",
+		"user_directory" 							: "INTERNAL",
+		"user_id" 									: "sa_api",
+		"email_config": {
+			"promotion_email_alerts"						: "false",
+			"custom_property_name_stream_alert_on_publish"	: "EmailAlertOnPublishTo",
+			"email_UDC_attribute_exists"					: "false",
+			"promotion_sender_email"						: "<you>@gmail.com",
+			"promotion_sender_pass"							: "h@rdc0dedp@ssw0rd",
+			"promotion_SMTP"								: "smtp.gmail.com",
+			"promotion_SMTP_port"							: "587"
+		},
+		"app_version_on_change" : {
 			"enabled" 				: "false",
-			"customPropertyName" 	: "PromotionS3Versioning",
-			"s3bucket" 				: "your-bucket",
-			"prefix"				: "Apps/"
+			"custom_property_name" 	: "PromotionS3Versioning",
+			"s3_bucket" 	 		: "notification-api-app-versioning",
+			"prefix"				: "PromotedToTest/"
 		}
 	}
 }
