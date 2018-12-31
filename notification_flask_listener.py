@@ -28,7 +28,6 @@ def app_update_promote():
     response_json = request.get_json()
 
     app_id = response_json[0]['objectID']
-    print(str(response_json))
 
     return promote_app(app_id)
 
