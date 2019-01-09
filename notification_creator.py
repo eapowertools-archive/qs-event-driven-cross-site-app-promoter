@@ -7,6 +7,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 import json
+import uuid
 import time
 import csv
 import urllib3
@@ -25,17 +26,24 @@ LOG_LEVEL = CONFIG["log_level"]
 PORT = CONFIG["port"]
 USER_DIRECTORY = CONFIG["promote_on_custom_property_change"]["user_directory"]
 USER_ID = CONFIG["promote_on_custom_property_change"]["user_id"]
-QLIK_SHARE_LOCATION = CONFIG["qlik_share_location"]
-LOCAL_SERVER = CONFIG["internal_central_node_IP"]
+LOCAL_SERVER = "localhost"
 
 BASE_URL = "https://" + LOCAL_SERVER + ":4242"
 
-LOG_LOCATION = QLIK_SHARE_LOCATION + \
-    "\\qs-event-driven-cross-site-app-promoter\\log\\"
+LOG_LOCATION = os.path.expandvars("%ProgramData%\\Qlik\\Sense\\Log") + \
+    "\\qs-event-driven-cross-site-app-promoter\\"
+
 if not os.path.exists(LOG_LOCATION):
     os.makedirs(LOG_LOCATION)
 
 LOG_FILE = LOG_LOCATION + "notification_creator.log"
+if not os.path.isfile(LOG_FILE):
+    with open(LOG_FILE,"w") as file:
+        file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format("Timestamp", "Module",
+                   "LogLevel","Process", "Thread", "Status", "LogID", "Message"))
+        file.write('\n')
+    file.close()
+
 LOGGER = logging.getLogger(__name__)
 # rolling logs with max 2 MB files with 3 backups
 HANDLER = logging.handlers.RotatingFileHandler(
@@ -47,8 +55,11 @@ if LOG_LEVEL == "INFO":
 else:
     logging.basicConfig(level=logging.DEBUG)
     HANDLER.setLevel(logging.DEBUG)
-FORMATTER = logging.Formatter(
-    "%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+LOG_ID = str(uuid.uuid4())
+STATUS = "Notifications"
+FORMATTER = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t" +
+                              "%(process)d\t%(thread)d\t" + STATUS + "\t%(message)s")
 HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
 
@@ -82,30 +93,31 @@ NOTIFICATIONS = dict({
 })
 
 while True:
+    log_id = str(uuid.uuid4())
     try:
         s, base_url = qrs.establish_requests_session("local")
 
         for notification in NOTIFICATIONS["notifications"]:
             # create the notification
             data = notification["listener_url"]
-            LOGGER.info("Data: %s", data)
+            LOGGER.info("%s\tData: %s", log_id, data)
             post_url = notification["post_url"]
             full_url = BASE_URL + post_url
-            LOGGER.info("Post URL: %s", full_url)
+            LOGGER.info("%s\tPost URL: %s", log_id, full_url)
 
             r = s.post(full_url, json=data)
 
-            LOGGER.info("Created    Status code: %s    Post URL: %s Response: %s",
-                        r.status_code, full_url, r.json())
+            LOGGER.info("%s\tCreated\tStatus code: %s\tPost URL: %s\tResponse: %s",
+                        log_id, r.status_code, full_url, r.json())
 
         qrs.close_requests_session(s)
     except requests.exceptions.RequestException as error:
         LOGGER.info(
-            "The notifications cannot be created. "
-            "The repository service is likely not fully operational: %s", error)
+            "%s\tThe notifications cannot be created. "
+            "The repository service is likely not fully operational: %s", log_id, error)
     except ValueError as error:
         LOGGER.info(
-            "Value Error received: %s. "
-            "The repository service is likely in the boot process.", error)
+            "%s\tValue Error received: %s. "
+            "The repository service is likely in the boot process.", log_id, error)
 
     time.sleep(60)

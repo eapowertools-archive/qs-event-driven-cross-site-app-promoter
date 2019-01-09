@@ -20,7 +20,7 @@ REMOTE_SERVER = CONFIG['promote_on_custom_property_change'][
     'remote_server_FQDN']
 USER_DIRECTORY = CONFIG['promote_on_custom_property_change']['user_directory']
 USER_ID = CONFIG['promote_on_custom_property_change']['user_id']
-LOCAL_SERVER = CONFIG["internal_central_node_IP"]
+LOCAL_SERVER = "localhost"
 
 # build URLs
 LOCAL_BASE_URL = 'https://' + LOCAL_SERVER + ':4242'
@@ -282,3 +282,22 @@ def service_cluster_full(s, base_url):
     rjson = r.json()[0]
 
     return r.status_code, rjson
+
+def remove_props_from_app(s, base_url, app_id, prop_list):
+    rjson = app_full(s, base_url, app_id)[1]
+    custom_properties = rjson['customProperties']
+
+    custom_properties = list(filter(lambda x: (x['definition']['name'] not in prop_list), custom_properties)) 
+
+    rjson['customProperties'] = custom_properties
+    rjson['modifiedDate'] = str(
+        ((datetime.today()) + timedelta(days=1)).isoformat() + 'Z')
+    data = json.dumps(rjson)
+
+    # put the app without the custom properties
+    r = s.put(
+        base_url + "/qrs/app/" + app_id + "?xrfkey=abcdefg123456789",
+        data=data,
+        headers={"Content-Type": "application/json"})
+
+    return r.status_code

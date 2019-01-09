@@ -11,7 +11,7 @@ with open("CONFIG.json") as f:
     CONFIG = json.load(f)
     f.close()
 
-INTERNAL_CENTRAL_NODE_IP = CONFIG["internal_central_node_IP"]
+LOCAL_SERVER = "localhost"
 PORT = CONFIG["port"]
 
 app = Flask(__name__)
@@ -51,4 +51,4 @@ def app_publish_review():
 
 
 if __name__ == '__main__':
-    app.run(host=INTERNAL_CENTRAL_NODE_IP, port=PORT)
+    app.run(host=LOCAL_SERVER, port=PORT)

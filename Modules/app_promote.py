@@ -20,16 +20,22 @@ with open("config.json") as f:
     f.close()
 
 # logging
-QLIK_SHARE_LOCATION = CONFIG["qlik_share_location"]
 LOG_LEVEL = CONFIG["log_level"].lower()
 LOGGER = logging.getLogger(__name__)
 
-LOG_LOCATION = QLIK_SHARE_LOCATION + \
-    "\\qs-event-driven-cross-site-app-promoter\\log\\"
+LOG_LOCATION = os.path.expandvars("%ProgramData%\\Qlik\\Sense\\Log") + \
+    "\\qs-event-driven-cross-site-app-promoter\\"
+
 if not os.path.exists(LOG_LOCATION):
     os.makedirs(LOG_LOCATION)
 
 LOG_FILE = LOG_LOCATION + "app_update.log"
+if not os.path.isfile(LOG_FILE):
+    with open(LOG_FILE,"w") as file:
+        file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format("Timestamp", "Module",
+                   "LogLevel","Process", "Thread", "Status", "LogID", "Message"))
+        file.write('\n')
+    file.close()
 
 # rolling logs with max 2 MB files with 3 backups
 HANDLER = logging.handlers.RotatingFileHandler(
@@ -42,10 +48,11 @@ else:
 
 APP_CHANGE_ID = str(uuid.uuid4())
 APP_CHANGE_STATUS = "Initializing"
-FORMATTER = logging.Formatter("%(asctime)s\t%(msecs)d\t%(name)s\t%(levelname)s\t" +
+FORMATTER = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t" +
                               "%(process)d\t%(thread)d\t" + APP_CHANGE_STATUS + "\t%(message)s")
 HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
+LOG_ID = str(uuid.uuid4())
 
 # additional config
 CUSTOM_PROPERTY_NAME_PROMOTE = CONFIG[
@@ -71,8 +78,6 @@ if AUTO_UNPUBLISH_ON_APPROVE_OR_DENY == "true":
 APP_VERSION_ON_CHANGE = CONFIG["promote_on_custom_property_change"]["app_version_on_change"][
     "enabled"].lower()
 
-LOG_ID = str(uuid.uuid4())
-
 if APP_VERSION_ON_CHANGE == "true":
     S3_BUCKET = CONFIG["promote_on_custom_property_change"][
         "app_version_on_change"]["s3_bucket"]
@@ -87,23 +92,6 @@ if APP_VERSION_ON_CHANGE == "true":
         # get the file path for the ExportedApps/ dir for later use
         EXPORTED_APP_DIRECTORY = str(Path(__file__).parent.parent).replace("\\",
                                                                            "/") + "/ExportedApps/"
-
-        # https://boto3.amazonaws.com/v1/documentation/api/latest/_modules/boto3/s3/transfer.html
-        class S3ProgressPercentage(object):
-
-            def __init__(self, filename):
-                self._filename = filename
-                self._size = float(os.path.getsize(filename))
-                self._seen_so_far = 0
-                self._lock = threading.Lock()
-
-            def __call__(self, bytes_amount):
-                with self._lock:
-                    self._seen_so_far += bytes_amount
-                    percentage = (self._seen_so_far / self._size) * 100
-                    LOGGER.debug("%s\r%s  %s / %s  (%.2f%%)" % (LOG_ID, self._filename, self._seen_so_far,
-                                                                self._size, percentage))
-
     except ImportError:
         APP_VERSIONING = False
         LOGGER.error("%s\tCould not import 'boto3' library which is used with s3. "
@@ -120,8 +108,11 @@ SEND_EMAIL_ON_APPROVAL_STATUS = False
 if PROMOTION_EMAIL_ALERTS == "true" and EMAIL_UDC_ATTRIBUTE_EXISTS == "true":
     SEND_EMAIL_ON_APPROVAL_STATUS = True
 
+PROP_LIST = [CUSTOM_PROPERTY_NAME_PROMOTE, CUSTOM_PROPERTY_NAME_PROMOTE_STREAM,
+             CUSTOM_PROPERTY_NAME_PROMOTE_APPROVAL, VERSIONING_CUSTOM_PROP_NAME, UNPUBLISH_CUSTOM_PROP_NAME]
+
 APP_CHANGE_STATUS = "app_update"
-FORMATTER = logging.Formatter("%(asctime)s\t%(msecs)d\t%(name)s\t%(levelname)s\t" +
+FORMATTER = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t" +
                               "%(process)d\t%(thread)d\t" + APP_CHANGE_STATUS + "\t%(message)s")
 HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
@@ -578,8 +569,7 @@ def promote_app(app_id, originator_node_id, originator_host_name):
                                 transfer.upload_file(
                                     app_abs_path,
                                     S3_BUCKET,
-                                    key,
-                                    callback=S3ProgressPercentage(app_abs_path))
+                                    key)
                                 LOGGER.info(
                                     "%s\tApp uploaded successfully to '%s'", log_id, S3_BUCKET)
                                 try:
@@ -673,6 +663,21 @@ def promote_app(app_id, originator_node_id, originator_host_name):
                         else:
                             LOGGER.info(
                                 "%s\tSuccessfully deleted the app with id: '%s'", log_id, app_id)
+                    else:
+                        LOGGER.info(
+                            "%s\tRemoving promotion related custom properties if they exist from the published app including: '%s'",
+                            log_id, PROP_LIST)
+
+                        s, base_url = qrs.establish_requests_session("local")
+                        removed_props_status = qrs.remove_props_from_app(s, base_url, app_id, PROP_LIST)
+                        qrs.close_requests_session(s)
+
+                        if removed_props_status != 200:
+                            LOGGER.error("%s\tSomething went wrong while trying to remove custom properties from the app: '%s'",
+                                        log_id, removed_props_status)
+                        else:
+                            LOGGER.info("%s\tSuccessfully removed promotion related custom properties from the app app: '%s'",
+                                        log_id, app_name)
 
                     # delete the local copy of the exported app
                     local_app_deleted_status = qrs.delete_local_app_export(
@@ -736,6 +741,26 @@ def promote_app(app_id, originator_node_id, originator_host_name):
                 LOGGER.info(
                     "%s\tSuccessfully deleted the app with id: '%s'", log_id, app_id)
 
+        elif (not promotion_approved
+              and not promotion_approval_empty
+              and not promotion_approval_bad_input
+              and not AUTO_UNPUBLISH):
+
+            LOGGER.info(
+                "%s\tRemoving promotion related custom properties if they exist from the published app including: '%s'",
+                log_id, PROP_LIST)
+
+            s, base_url = qrs.establish_requests_session("local")
+            removed_props_status = qrs.remove_props_from_app(s, base_url, app_id, PROP_LIST)
+            qrs.close_requests_session(s)
+
+            if removed_props_status != 200:
+                LOGGER.error("%s\tSomething went wrong while trying to remove custom properties from the app: '%s'",
+                             log_id, removed_props_status)
+            else:
+                LOGGER.info("%s\tSuccessfully removed promotion related custom properties from the app app: '%s'",
+                            log_id, app_name)
+                            
         elif custom_property_name_promote_value_count > 1:
             LOGGER.error("%s\tThere can only be a single value in the custom property: '%s'. Exiting.",
                          log_id, CUSTOM_PROPERTY_NAME_PROMOTE)

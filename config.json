@@ -1,8 +1,6 @@
 {
-	"log_level" 				: "INFO",
-	"internal_central_node_IP"	: "10.27.0.143",			
+	"log_level" 				: "INFO",			
 	"port"	   					: "5000",
-	"qlik_share_location"		: "\\\\QLIK-CENTRAL\\QlikShare",
 	"promote_on_custom_property_change" : {
 		"custom_property_name_promote" 				: "PromoteToServer",
 		"custom_property_name_promote_stream" 		: "PromoteToStream",

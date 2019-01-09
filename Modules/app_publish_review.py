@@ -21,15 +21,21 @@ with open("config.json") as f:
     f.close()
 
 # logging
-QLIK_SHARE_LOCATION = CONFIG["qlik_share_location"]
 LOG_LEVEL = CONFIG["log_level"].lower()
 
-LOG_LOCATION = QLIK_SHARE_LOCATION + \
-    "\\qs-event-driven-cross-site-app-promoter\\log\\"
+LOG_LOCATION = os.path.expandvars("%ProgramData%\\Qlik\\Sense\\Log") + \
+    "\\qs-event-driven-cross-site-app-promoter\\"
+
 if not os.path.exists(LOG_LOCATION):
     os.makedirs(LOG_LOCATION)
 
 LOG_FILE = LOG_LOCATION + "app_publish_review.log"
+if not os.path.isfile(LOG_FILE):
+    with open(LOG_FILE,"w") as file:
+        file.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}".format("Timestamp", "Module",
+                   "LogLevel","Process", "Thread", "Status", "LogID", "Message"))
+        file.write('\n')
+    file.close()
 
 LOGGER = logging.getLogger(__name__)
 # rolling logs with max 2 MB files with 3 backups
@@ -43,7 +49,7 @@ else:
 
 LOG_ID = str(uuid.uuid4())
 APP_CHANGE_STATUS = "Initializing"
-FORMATTER = logging.Formatter("%(asctime)s\t%(msecs)d\t%(name)s\t%(levelname)s\t" +
+FORMATTER = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t" +
                               "%(process)d\t%(thread)d\t" + APP_CHANGE_STATUS + "\t%(message)s")
 HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
@@ -78,7 +84,7 @@ else:
     EMAIL_ALERTS = False
 
 APP_CHANGE_STATUS = "app_published_gather_info"
-FORMATTER = logging.Formatter("%(asctime)s\t%(msecs)d\t%(name)s\t%(levelname)s\t" +
+FORMATTER = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t" +
                               "%(process)d\t%(thread)d\t" + APP_CHANGE_STATUS + "\t%(message)s")
 HANDLER.setFormatter(FORMATTER)
 LOGGER.addHandler(HANDLER)
@@ -146,7 +152,7 @@ def email_on_publish_to_review(app_id):
 
         if stream_marked_for_approval:
             app_change_status = "app_published_to_approval_stream"
-            formatter = logging.Formatter("%(asctime)s\t%(msecs)d\t%(name)s\t%(levelname)s\t" +
+            formatter = logging.Formatter("%(asctime)s\t%(name)s\t%(levelname)s\t" +
                                           "%(process)d\t%(thread)d\t" + app_change_status + "\t%(message)s")
             HANDLER.setFormatter(formatter)
             LOGGER.addHandler(HANDLER)
