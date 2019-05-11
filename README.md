@@ -147,7 +147,7 @@ Regarding the promotion specifically, the high-level concept is that you would s
 
 I have chosen to develop the application in Python using Flask, however the same concept could be created in something like NodeJS and Express as well.
 
-**Note that all Python programs must be executed in the root directory of the project's structure, otherwise the log files will be created in the *Log/* directory of wherever you are running them from.**
+**Note that all Python programs must be executed in the root directory of the project's structure!**
 
 The first Python program that needs to be run is the *Console*. You can find this in the root directory as *configuration_console.py*. This is a flask servlet that hosts the configuration website locally. The port on which this site runs on is configurable in *console_port.json*. The default port is _5001_. All of the configuration settings are handled from here.
 
