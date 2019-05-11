@@ -206,7 +206,7 @@ So the folder structure resembles:
 
     - PromoteToServer (**Apps**)
 
-        - Contains an arbitrary name of your Qlik Sense site that you want the option of promoting to, as well as a the string 'Overwrite' or 'Duplicate'. Note that this custom property can only serve a single Qlik Sense site by default.
+        - **Contains the alias** (see step 7) of your Qlik Sense site that you want the option of promoting to, as well as a the string 'Overwrite' or 'Duplicate'. Note that this custom property can only serve a single Qlik Sense site by default.
 
         - Example values:
             -  `test - Overwrite`
