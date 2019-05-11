@@ -1,0 +1,51 @@
+{
+    "installed_on_sense_server": "true",
+    "logging": {
+        "log_level": "INFO",
+        "notification_log_bytes": "3000000",
+        "notification_log_rolling_backup_num": "3",
+        "other_logs_bytes": "20000000",
+        "other_logs_rolling_backup_num": "5"
+    },
+    "port": "5000",
+    "promote_on_custom_property_change": {
+        "app_version_on_change": {
+            "auto_version_on_promote": "false",
+            "custom_property_name": "PromotionS3Versioning",
+            "enabled": "false",
+            "prefix": "PromotedToTest/",
+            "s3_bucket": "notification-api-app-versioning"
+        },
+        "auto_unpublish_on_approve_or_deny": {
+            "auto_unpublish": "true",
+            "custom_property_name": ""
+        },
+        "custom_property_name_promote": "PromoteToServer",
+        "custom_property_name_promote_approval": "PromotionApproval",
+        "custom_property_name_promote_stream": "PromoteToStream",
+        "email_config": {
+            "custom_property_name_stream_alert_on_publish": "EmailAlertOnPublishTo",
+            "email_UDC_attribute_exists": "true",
+            "promotion_SMTP": "smtp.gmail.com",
+            "promotion_SMTP_port": "587",
+            "promotion_email_alerts": "false",
+            "promotion_sender_email": "",
+            "promotion_sender_pass": ""
+        },
+        "local_server": "",
+        "local_server_FQDN": "qlik-dev.company.com",
+        "remote_servers": [
+            {
+                "remote_server": "qlik-test.company.com",
+                "server_alias": "test"
+            }
+        ],
+        "user_directory": "INTERNAL",
+        "user_id": "sa_api"
+    },
+    "promote_on_reload": {
+        "custom_property_name": "PromoteOnReload",
+        "enabled": "false",
+        "tag_name": "PromoteOnReload"
+    }
+}

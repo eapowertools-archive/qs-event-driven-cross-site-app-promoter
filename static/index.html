@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- code base from https://bootsnipp.com/snippets/X261W */ -->
+
+<head>
+  <meta charset="UTF-8">
+  <link rel='stylesheet' href='Libraries/Normalize-8.0.1/normalize.min.css'>
+  <link rel='stylesheet' href="css/styles.css">
+  <link rel="stylesheet" href='Libraries/Font-Awesome-4.7.0/font-awesome.css'>
+  <link rel="stylesheet" href="Libraries/Bootstrap-Toggle-2.2.0/bootstrap-toggle.min.css">
+  <link rel="stylesheet" href="Libraries/Bootstrap-3.3.7/bootstrap.min.css">
+  <link rel="stylesheet" href="Libraries/Bootstrap-DataTables/dataTables.bootstrap.min.css">
+
+</head>
+
+<body class="sidebar-is-reduced">
+  <header class="l-header">
+    <div class="l-header__inner clearfix">
+      <div class="c-header-icon js-hamburger">
+        <div class="hamburger-toggle"><span class="bar-top"></span><span class="bar-mid"></span><span
+            class="bar-bot"></span></div>
+      </div>
+      <div class="title">
+        <span class="title">Console</span>
+      </div>
+    </div>
+  </header>
+  <div class="l-sidebar">
+    <div class="logo">
+      <img class="logo__txt" src="images/Icon_Tools_grey.png">
+    </div>
+    <div class="l-sidebar__content">
+      <nav class="c-menu js-menu" role="tabpanel">
+        <ul class="u-list" role="tablist">
+          <li role="presentation" class="c-menu__item is-active" data-toggle="tooltip" title="General Config">
+            <a href="#general-config" aria-controls="general-config" role="tab" data-toggle="tab">
+              <div class="c-menu__item__inner"><i class="fa fa-wrench"></i>
+                <div class="c-menu-item__title"><span>General Config</span></div>
+              </div>
+            </a>
+          </li>
+          <li role="presentation" class="c-menu__item has-submenu" data-toggle="tooltip" title="Email Config">
+            <a href="#email-config" aria-controls="email-config" role="tab" data-toggle="tab">
+              <div class="c-menu__item__inner"><i class="fa fa-envelope-o"></i>
+                <div class="c-menu-item__title"><span>Email Config</span></div>
+              </div>
+            </a>
+          </li>
+          <li role="presentation" class="c-menu__item has-submenu" data-toggle="tooltip" title="Versioning Config">
+            <a href="#versioning-config" aria-controls="versioning-config" role="tab" data-toggle="tab">
+              <div class="c-menu__item__inner"><i class="fa fa-clone"></i>
+                <div class="c-menu-item__title"><span>Versioning Config</span></div>
+              </div>
+            </a>
+          </li>
+          <li role="presentation" class="c-menu__item has-submenu" data-toggle="tooltip" title="Logging Config">
+            <a href="#logging-config" aria-controls="logging-config" role="tab" data-toggle="tab">
+              <div class="c-menu__item__inner"><i class="fa fa-file-text-o"></i>
+                <div class="c-menu-item__title"><span>Logging Config</span></div>
+              </div>
+            </a>
+          </li>
+          <li role="presentation" class="c-menu__item has-submenu" data-toggle="tooltip" title="QRS Test">
+            <a href="#qrs-test" aria-controls="qrs-test" role="tab" data-toggle="tab">
+              <div class="c-menu__item__inner"><i class="fa fa-plug"></i>
+                <div class="c-menu-item__title"><span>QRS Test</span></div>
+              </div>
+            </a>
+          </li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</body>
+<main class="l-main">
+  <div class="page-alerts">
+    <div class="alert alert-success page-alert" id="writeSuccess">
+      <strong>Changes saved successfully!</strong>
+    </div>
+    <div class="alert alert-danger page-alert" id="writeFailure">
+      <strong>Could not save changes!</strong> Check the console for errors.
+    </div>
+    <div class="alert alert-success page-alert" id="smtpTestSuccess">
+      <strong>Email sent successfully!</strong>
+    </div>
+    <div class="alert alert-danger page-alert" id="smtpTestError">
+      <strong>Something went wrong...</strong>
+    </div>
+    <div class="alert alert-info page-alert" id="workingOnIt">
+      <strong>Working on it...</strong>
+    </div>
+  </div>
+  <div class="content-wrapper content-wrapper--with-bg">
+    <!-- https://bootsnipp.com/snippets/23Emz -->
+
+    <form id="settings-form" class="form-horizontal" action="">
+      <div id="submitButtonDiv" class="submit-button">
+        <button id="submitButton" type="submit" class="btn btn-success">Save</button>
+      </div>
+
+      <div id="general-config" role="tabpanel" class="tab-pane fade in active">
+        <div class="tab-inner">
+          <div class="container form-div">
+            <legend>Flask Service Port</legend>
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="flaskPort">Port</label>
+              <div class="col-md-6">
+                <input required id="flaskPort" name="flaskPort" type="number" class="form-control input-md">
+              </div>
+            </div>
+            <br>
+
+            <legend>Qlik Local Server URLs</legend>
+            <div class="form-group">
+              <label class="col-md-4 control-label">Installed on a Sense server (localhost)</label>
+              <div class="col-md-6">
+                <input id="onSameBox" type="checkbox" data-toggle="toggle">
+              </div>
+            </div>
+            <div id="nonLocalhostInstallDiv" class="start-hidden">
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="localServer">Qlik Sense Server URL (for QRS)</label>
+                <div class="col-md-6">
+                  <input id="localServer" name="localServer" type="text"
+                    placeholder="machine name or local-server.domain.com" class="form-control input-md">
+                </div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="localServerFQDN">Qlik Sense FQDN (end-user url for use in
+                emails)</label>
+              <div class="col-md-6">
+                <input id="localServerFQDN" name="localServerFQDN" type="text" placeholder="local-server.domain.com"
+                  class="form-control input-md">
+              </div>
+            </div>
+
+            <br>
+            <legend>Qlik Remote Server URLs</legend>
+            <br>
+            <div id="remoteServers" class="remote-input">
+            </div>
+
+            <i id="remoteServerAddButton" class="remote-plus-button fa fa-plus-circle fa-2x"></i>
+            <br>
+            <br>
+            <br>
+            <legend>Qlik Backend Service User</legend>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="backendUserDirectory">User Directory</label>
+              <div class="col-md-6">
+                <input id="backendUserDirectory" name="backendUserDirectory" type="text" placeholder="INTERNAL"
+                  class="form-control input-md">
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="backendUserId">User ID</label>
+              <div class="col-md-6">
+                <input id="backendUserId" name="backendUserId" type="text" placeholder="sa_api"
+                  class="form-control input-md">
+              </div>
+            </div>
+            <br>
+
+            <legend>Custom Properties</legend>
+
+            <span><i>It is suggested that they all begin with a common string such as 'Promot*' so that security rules
+                can be built around them to control access.</i></span>
+            <br>
+            <br>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="targetServer">Target Server</label>
+              <div class="col-md-6">
+                <input id="targetServer" name="targetServer" type="text" placeholder="PromoteToServer"
+                  class="form-control input-md">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="targetStreams">Target Streams</label>
+              <div class="col-md-6">
+                <input id="targetStreams" name="targetStreams" type="text" placeholder="PromoteToStream"
+                  class="form-control input-md">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="promotionApproval">Promotion Approval</label>
+              <div class="col-md-6">
+                <input id="promotionApproval" name="promotionApproval" type="text" placeholder="PromotionApproval"
+                  class="form-control input-md">
+              </div>
+            </div>
+
+            <legend>Auto-Promote on Reloads</legend>
+
+            <span><i>This option allows for the ability to control auto-promotion post reload on a per-app basis,
+                controllable via a custom property. Note that this capability if enabled will disable the manual app
+                promotion capabilities, as it is an overriding feature.</i></span>
+            <br>
+            <br>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label">Auto-Promote on Reloads</label>
+              <div class="col-md-6">
+                <input id="autoPromoteOnReload" name="autoPromoteOnReload" type="checkbox" data-toggle="toggle">
+              </div>
+            </div>
+
+            <div class="start-hidden" id="autoPromoteOnReloadDiv">
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="autoPromoteOnReloadProp">Auto-Promote Property</label>
+                <div class="col-md-6">
+                  <input id="autoPromoteOnReloadProp" name="autoPromoteOnReloadProp" type="text"
+                    placeholder="PromotionUnpublish" class="form-control input-md">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="autoPromoteOnReloadTag">Auto-Promote Tag</label>
+                <div class="col-md-6">
+                  <input id="autoPromoteOnReloadTag" name="autoPromoteOnReloadTag" type="text"
+                    placeholder="PromoteOnReload" class="form-control input-md">
+                </div>
+              </div>
+            </div>
+
+            <legend>Auto-Unpublishing</legend>
+
+            <span><i>Auto un-publishing on promotion implies that once an app is promoted to another server, it will
+                then be duplicated and returned to the original owner's MyWork, and the published app will be deleted.
+                This allows for the promotion cycle to continue again. If you would like the app to remain published,
+                set this to 'Off'.</i></span>
+            <br>
+            <br>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label">Auto-Unpublish Apps on Promotion</label>
+              <div class="col-md-6">
+                <input id="autoUnpublish" name="autoUnpublish" type="checkbox" data-toggle="toggle">
+              </div>
+            </div>
+
+            <div class="form-group start-hidden" id="promotionUnpublishDiv">
+              <label class="col-md-4 control-label" for="promotionUnpublish">Promotion Unpublish</label>
+              <div class="col-md-6">
+                <input id="promotionUnpublish" name="promotionUnpublish" type="text" placeholder="PromotionUnpublish"
+                  class="form-control input-md">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="email-config" role="tabpanel" class="tab-pane fade in">
+        <div class="tab-inner">
+          <div class="container form-div">
+            <legend>Email</legend>
+            <span><i>Email entails both emails for when new apps are published to certain streams, and emails on
+                approval/rejection of app promotions.</i></span>
+            <br>
+            <br>
+
+            <div class="form-group">
+              <label id="emailEnabledButtonLabel" class="col-md-4 control-label">Email Enabled</label>
+              <div class="col-md-6">
+                <input id="emailEnabledButton" type="checkbox" data-toggle="toggle">
+              </div>
+            </div>
+
+            <div id="emailDiv" class="start-hidden">
+              <div class="form-group">
+                <label class="col-md-4 control-label">Email Attribute Exists in UDC</label>
+                <div class="col-md-6">
+                  <input id="udcEmailExistsButton" name="udcEmailExistsButton" type="checkbox" data-toggle="toggle">
+                </div>
+                <span style="float:left"><i>This is so users can receive promotion approval/denial emails</i></span>
+              </div>
+              <br>
+
+              <legend>SMTP Settings</legend>
+              <span><i>SSL using STARTTLS -- password is stored in plain text in config.json</i></span>
+              <br>
+              <br>
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="smtp">SMTP</label>
+                <div class="col-md-6">
+                  <input id="smtp" name="smtp" type="text" placeholder="smtp.gmail.com" class="form-control input-md">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="smtpPort">PORT</label>
+                <div class="col-md-6">
+                  <input id="smtpPort" name="smtpPort" type="number" placeholder="587" class="form-control input-md">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="emailAddress">Email Address</label>
+                <div class="col-md-6">
+                  <input id="emailAddress" name="emailAddress" type="email" placeholder="you@mail.com"
+                    class="form-control input-md">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="emailPassword">Email Password</label>
+                <div class="col-md-6">
+                  <input id="emailPassword" name="emailPassword" type="password" placeholder="secret"
+                    class="form-control input-md">
+                </div>
+              </div>
+
+              <br>
+              <br>
+              <legend>SMTP Tester</legend>
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="smtpTestDestination">Email Address for Test Email</label>
+                <div class="col-md-6">
+                  <input id="smtpTestDestination" name="smtpTestDestination" type="text" placeholder="them@mail.com"
+                    class="form-control input-md ignore-validation">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="smtpTestButton">Send Test Email</label>
+                <div class="col-md-6">
+                  <button id="smtpTestButton" type="button" onclick="smtpTest()" class="btn btn-success" disabled>Send
+                    Test Email</button>
+                </div>
+              </div>
+              <br>
+
+              <legend>Custom Properties</legend>
+              <span><i>This custom property controls what streams will trigger email alerts to stream admins on publish
+                  of applications.</i></span>
+              <br>
+              <br>
+
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="emailAlertOnPublishTo">Email Alert on Publish To (Stream
+                  Prop)</label>
+                <div class="col-md-6">
+                  <input id="emailAlertOnPublishTo" name="emailAlertOnPublishTo" type="text"
+                    placeholder="EmailAlertOnPublishTo" class="form-control input-md">
+                </div>
+              </div>
+              <br>
+
+              <legend>Stream Administrators</legend>
+              <span><i>These users will receive email alerts on publishing of apps to these streams provided they are
+                  flagged with the "Email Alert on Publish To" property above.</i></span>
+              <br>
+              <br>
+              <div id="streamAdministratorsTableDiv">
+              </div>
+              <br>
+              <br>
+              <br>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="versioning-config" role="tabpanel" class="tab-pane fade in">
+        <div class="tab-inner">
+          <div class="container form-div">
+
+            <legend>Versioning</legend>
+            <span><i>This program supports versioning in AWS S3 of app "shells" -- meaning, exported apps without
+                data.</i></span>
+            <br>
+            <br>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label">S3 Versioning Enabled</label>
+              <div class="col-md-6">
+                <input id="s3versioningEnabledButton" name="s3versioningEnabledButton" type="checkbox"
+                  data-toggle="toggle">
+              </div>
+            </div>
+
+            <div class="start-hidden" id="versioningDiv">
+              <div class="form-group">
+                <label class="col-md-4 control-label">S3 Auto-Versioning Enabled</label>
+                <div class="col-md-6">
+                  <input id="s3autoVersioningEnabledButton" name="s3autoVersioningEnabledButton" type="checkbox"
+                    data-toggle="toggle">
+                </div>
+              </div>
+
+              <div id="s3VersioningPropertyDiv">
+                <legend>Custom Property</legend>
+                <div class="form-group">
+                  <label class="col-md-4 control-label" for="s3VersioningProperty">Custom Property for
+                    Versioning</label>
+                  <div class="col-md-6">
+                    <input id="s3VersioningProperty" name="s3VersioningProperty" type="text"
+                      class="form-control input-md">
+                  </div>
+                </div>
+              </div>
+
+              <legend>S3 Details</legend>
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="s3bucket">S3 Bucket Name</label>
+                <div class="col-md-6">
+                  <input id="s3bucket" name="s3bucket" type="text" placeholder="your-bucket-name"
+                    class="form-control input-md">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="col-md-4 control-label" for="s3bucketPrefix">S3 Bucket Prefix</label>
+                <div class="col-md-6">
+                  <input id="s3bucketPrefix" name="s3bucketPrefix" type="text" placeholder="YourPrefix/"
+                    class="form-control input-md">
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="logging-config" role="tabpanel" class="tab-pane fade in">
+        <div class="tab-inner">
+          <div class="container form-div">
+            <legend>Log Level</legend>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="logLevel">Log Level</label>
+              <div class="col-md-6">
+                <input id="logLevel" name="logLevel" type="text" placeholder="INFO" class="form-control input-md">
+                <span class="help-block">Can be 'INFO' or 'DEBUG'</span>
+              </div>
+            </div>
+
+            <legend>Notification Log Settings</legend>
+            <span><i>These log settings are specifically for the service that creates the repository change
+                subscriptions every 60 seconds. They build up fairly rapidly, so it is advisable to set these
+                lower.</i></span>
+            <br>
+            <br>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="notificationLogSize">Log Max File Size (MB)</label>
+              <div class="col-md-6">
+                <input id="notificationLogSize" name="notificationLogSize" type="number" placeholder="2"
+                  class="form-control input-md">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="notificationRollingLogs">Number of Rolling Logs</label>
+              <div class="col-md-6">
+                <input id="notificationRollingLogs" name="notificationRollingLogs" type="number" placeholder="3"
+                  class="form-control input-md">
+              </div>
+            </div>
+
+            <legend>Other Log Settings</legend>
+            <span><i>These logs store the actual auditing data from the services. Set these values relatively high if
+                you need to ensure you capture all historical data without rolling over.</i></span>
+            <br>
+            <br>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="otherLogSize">Log Max File Size (MB)</label>
+              <div class="col-md-6">
+                <input id="otherLogSize" name="otherLogSize" type="number" placeholder="20"
+                  class="form-control input-md">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="col-md-4 control-label" for="otherRollingLogs">Number of Rolling Logs</label>
+              <div class="col-md-6">
+                <input id="otherRollingLogs" name="otherRollingLogs" type="number" placeholder="5"
+                  class="form-control input-md">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="qrs-test" role="tabpanel" class="tab-pane fade in">
+        <div class="tab-inner">
+          <div class="container form-div">
+            <legend>QRS Test - Local</legend>
+
+            <div class="form-group">
+              <div class="col-md-6 qrs-button-div">
+                <button id="qrs-testLocalButton" type="button" onclick="qrsTest('local')" class="btn btn-success">QRS
+                  Test</button>
+                <div id="localResponseIcon"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="qrs-testLocalResponse">Response</label>
+              <textarea class="form-control" id="qrs-testLocalResponse" rows="7"></textarea>
+            </div>
+            <legend>QRS Test - Remote</legend>
+
+            <div class="form-group">
+              <div id="remoteServerDropdown" class="col-md-6">
+              </div>
+              <div class="col-md-6 qrs-button-div">
+                <button id="qrs-testRemoteButton" type="button" onclick="qrsTest('remote')" class="btn btn-success">QRS
+                  Test</button>
+                <div id="remoteResponseIcon"></div>
+              </div>
+            </div>
+            <div class="form-group qrs-response-box">
+              <label for="qrs-testRemoteResponse">Response</label>
+              <textarea class="form-control" id="qrs-testRemoteResponse" rows="7"></textarea>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src='Libraries/jquery-3.3.1/jquery.min.js'></script>
+<script src='Libraries/Bootstrap-3.3.7/bootstrap.min.js'></script>
+<script src="Libraries/Bootstrap-Toggle-2.2.0/bootstrap-toggle.min.js"></script>
+<script src="Libraries/jquery-validate-1.7/jquery.validate.min.js" type="text/javascript"></script>
+<script src="Libraries/Bootstrap-DataTables/dataTables.min.js" type="text/javascript"></script>
+<script src='js/js.js'></script>
+
+</html>
