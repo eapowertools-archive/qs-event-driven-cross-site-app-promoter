@@ -179,12 +179,12 @@ Two Python programs that should be run as windows services on system startup (no
 
 4. Take the client.pem and client_key.pem from the local site export and place them in the `/Certificates/LocalServerCerts/` folder
 
-5. Take the client.pem and client_key.pem from the remote site(s) export and place them in the `/Certificates/<you server alias here>/` folder(s), where _\<your server alias here>_ is the friendly name of the server that you will enter in the configuration console here:
+5. Take the client.pem and client_key.pem from the remote site(s) export and place them in the `/Certificates/<your server alias here>/` folder(s), where _\<your server alias here>_ is the friendly name of the server that you will enter in the configuration console here:
     ![remote_server_alias](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/remote_server_alias.png)
 So the folder structure resembles:
     ![remote_server_alias_folder](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/remote_server_alias_folder.png)
 
-6. Open up a command prompt and navigate to the folder location where you extracted this package. Execute `python configuration_console.py` which will run a Flask servlet that defaults to port `5001`. This will serve the configuration console locally. If you require a different port, edit the _console\_port.json_ file. You can then access the configuration console at http://localhost:5001 or at whichever port you've chosen.
+6. Open up a command prompt and navigate to the folder location where you extracted this package. Execute `python configuration_console.py` which will run a Flask servlet that defaults to port `5001`. This will serve the configuration console locally. If you require a different port, edit the _console\_port.json_ file. You can then access the configuration console at http://localhost:5001/console or at whichever port you've chosen.
 
     ![console_default](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/console_default.png)
 
