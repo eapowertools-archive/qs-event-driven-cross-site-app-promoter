@@ -29,7 +29,7 @@
 -  [About](#about)
 -  [Scenario & Workflow](#scenario-and-workflow)
 -  [Architecture & Components](#architecture-and-components)
--  [Installation & Configuration (Including Video)](#installation-and-configuration)
+-  [Installation & Configuration](#installation-and-configuration)
 -  [Creating Windows Services](#creating-windows-services)
 -  [Qlik Sense Auditing Dashboard](#qlik-sense-auditing-dashboard)
 
