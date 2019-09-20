@@ -47,7 +47,7 @@ Enter the Notification endpoint via the QRS API. The `/qrs/notification` endpoin
 For more information on the Notification endpoint of the QRS API, please refer to:
 
 -  [Qlik's Developers docs](https://help.qlik.com/en-US/sense-developer/November2018/Subsystems/RepositoryServiceAPI/Content/Sense_RepositoryServiceAPI/RepositoryServiceAPI-Notification-Create-Change-Subscription.htm)
-- the [Enterprise Architecture Team's blog on the details](https://eablog.qlikpoc.com/2018/11/01/qlik-sense-repository-notification-api/)
+- the [Enterprise Architecture Team's blog on the details](https://community.qlik.com/t5/Qlik-Architecture-Deep-Dive-Blog/bg-p/qlik-architecture-deep-dive-blog)
 
   
 
@@ -68,31 +68,31 @@ For example, if a user selects the value of _'Approve'_ in the _PromotionApprova
 
 1.  _Sales Rep_ creates an app that he wants to publish to the "Sales" stream on their `Dev` tier. They right-click and publish the app.
 
-    ![workflow1](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/1_sales_rep_publish.png)
+    ![workflow1](../assets/1_sales_rep_publish.png)
 
 2.  _Sales Manager_ gets an email alert that a new app has been published to the "Sales" stream, as he is pre-configured on a list of admin emails for the "Sales" stream.
 
-    ![workflow1.5](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/2_sales_manager_email_alert.png)
+    ![workflow1.5](../assets/2_sales_manager_email_alert.png)
 
 3.  _Sales Manager_ reviews the app, and chooses whether to _'Approve'_ or _'Deny'_ it for promotion to `Test`. _Sales Manager_ can see these custom properties, while _Sales Rep_ cannot. If _Sales Manager_ has selected _'Approve'_, they must also select values in the _"PromoteToServer"_ and _"PromoteToStream"_ to promote the app up to `Test`. These custom properties dictate whether the app will overwrite any existing apps with the same name in the destination stream(s) if they exist, or whether to instead duplicate the stream(s). If they select _'Deny'_, the app will not be promoted regardless of the other custom properties, and will instead (optionally) be duplicated and reassigned back to the owner and will also be deleted from the stream. Additionally, if the administrator has versioning in Amazon S3 enabled, they can choose to version the app in S3 by setting _"PromotionS3Versioning"_ to _'True'_. The administrator can also choose to have all apps auto-versioned as well, without the need for any additional custom properties.
 
-    ![workflow3.1](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_sales_manager_approve_deny.png)
+    ![workflow3.1](../assets/3_sales_manager_approve_deny.png)
 
-    ![workflow3.2](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_promotion_approval.png)
+    ![workflow3.2](../assets/3_promotion_approval.png)
 
-    ![workflow3.3](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_promote_to_server.png)
+    ![workflow3.3](../assets/3_promote_to_server.png)
 
-    ![workflow3.4](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_promote_to_stream.png)
+    ![workflow3.4](../assets/3_promote_to_stream.png)
 
-    ![workflow3.5](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_promotion_s3_versioning.png)
+    ![workflow3.5](../assets/3_promotion_s3_versioning.png)
 
-    ![workflow3.6](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/3_final_custom_props.png)
+    ![workflow3.6](../assets/3_final_custom_props.png)
 
 4.  _Sales Rep_ receives either an _approval_ or _denial_ email depending on what _Sales Manager_ decided.
 
-    ![workflow4.1](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/approval_email.png)
+    ![workflow4.1](../assets/approval_email.png)
 
-    ![workflow4.2](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/denail_email.png)
+    ![workflow4.2](../assets/denail_email.png)
     
     You will also then recieve two additional emails:
           - An email showing where the applications are _intended_ to be published to.
@@ -138,7 +138,7 @@ Regarding the promotion specifically, the high-level concept is that you would s
 
   
 
-![workflow](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/new_workflow.png)
+![workflow](../assets/new_workflow.png)
 
   
   
@@ -151,7 +151,7 @@ I have chosen to develop the application in Python using Flask, however the same
 
 The first Python program that needs to be run is the *Console*. You can find this in the root directory as *configuration_console.py*. This is a flask servlet that hosts the configuration website locally. The port on which this site runs on is configurable in *console_port.json*. The default port is _5001_. All of the configuration settings are handled from here.
 
-![console_default](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/console_default.png)
+![console_default](../assets/console_default.png)
   
 
 Two Python programs that should be run as windows services on system startup (no dependencies needed):
@@ -175,32 +175,32 @@ Two Python programs that should be run as windows services on system startup (no
     - Note that `boto3` is only required if you have configured S3 versioning
 
 3. Export certificates from the local Qlik site's QMC with the server name and no password, then do the same for the remote server(s)
-![export-certs](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/export_certs.png)
+![export-certs](../assets/export_certs.png)
 
 4. Take the client.pem and client_key.pem from the local site export and place them in the `/Certificates/LocalServerCerts/` folder
 
 5. Take the client.pem and client_key.pem from the remote site(s) export and place them in the `/Certificates/<your server alias here>/` folder(s), where _\<your server alias here>_ is the friendly name of the server that you will enter in the configuration console here:
-    ![remote_server_alias](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/remote_server_alias.png)
+    ![remote_server_alias](../assets/remote_server_alias.png)
 So the folder structure resembles:
-    ![remote_server_alias_folder](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/remote_server_alias_folder.png)
+    ![remote_server_alias_folder](../assets/remote_server_alias_folder.png)
 
 6. Open up a command prompt and navigate to the folder location where you extracted this package. Execute `python configuration_console.py` which will run a Flask servlet that defaults to port `5001`. This will serve the configuration console locally. If you require a different port, edit the _console\_port.json_ file. You can then access the configuration console at http://localhost:5001/console or at whichever port you've chosen.
 
-    ![console_default](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/console_default.png)
+    ![console_default](../assets/console_default.png)
 
 7. Complete all sections of the configuration console. This console includes options for:
     **Note that whenever you change these settings, you will need to bounce the _notification_flask_listener.py_ service for them to take effect.**
 
     - General Settings
-      - ![console_default](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/console_default.png)
+      - ![console_default](../assets/console_default.png)
     - Email Configuration (including an smtp tester)
-      - ![console_default](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/email_settings.png)
+      - ![console_default](../assets/email_settings.png)
     - Versioning
-      - ![console_default](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/versioning_settings.png)
+      - ![console_default](../assets/versioning_settings.png)
     - Logging
-      - ![console_default](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/log_settings.png)
+      - ![console_default](../assets/log_settings.png)
     - QRS Connection Testing
-      - ![console_default](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/qrs_settings.png)
+      - ![console_default](../assets/qrs_settings.png)
 
 8. Create the following custom properties in the local server's QMC (whichever are necessary given your chosen configuration above) __(note that many of them start with 'Promot*', as this is key to a security rule that controls the visibility of custom properties by their names. You can change the names of these custom properties as they are referenced in the configuration console above, but ensure that any of the properties below that begin with 'Promot*' follow a similar naming convention that can be reflected in the associated security rule as well.)__:
 
@@ -214,7 +214,7 @@ So the folder structure resembles:
             - `prod - Overwrite`
             - `prod - Duplicate`
 
-        ![promote-to-server](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/promoteToServer.png)
+        ![promote-to-server](../assets/promoteToServer.png)
 
     - PromoteToStream (**Apps**)
 
@@ -224,43 +224,43 @@ So the folder structure resembles:
             -  `Everyone`
             -  `Review`
 
-        ![promote-to-stream](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/promoteToStream.png)
+        ![promote-to-stream](../assets/promoteToStream.png)
 
     - PromotionApproval (**Apps**)
 
         - Contains the values `Approve` and `Deny`
         - This custom property allows for users to _approve_ or _deny_ the promotion of applications.
-        -  ![promotion-approval](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/promotionApproval.png)
+        -  ![promotion-approval](../assets/promotionApproval.png)
 
     - PromotionS3Versioning (**Apps**) *__Optional__*
 
         - Contains the value `True` that is applied to any app that you'd like versioned in your Amazon S3 bucket
 
-        -  ![promotion-s3-versioning](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/promotionS3Versioning.png)
+        -  ![promotion-s3-versioning](../assets/promotionS3Versioning.png)
 
     - PromotionUnpublish (**Apps**) *__Optional__*
 
         - Contains the value `True`
         - The default behavior of the program is to automatically unpublish the app (duplicate it, assign it to the owner, and then delete the published app -- essentially unpublish) on the approval or denial of the app's promotion. This however can be altered by changing "auto_unpublish" value in config.json to 'false' and providing another custom property. This will change the default behavior to _not_ unpublish the app unless the custom property _"PromotionUnpublish"_ exists with the value of `True` in conjunction with the _"PromotionApproval"_  `Approve` or `Deny`.
-        -  ![promotion-unpublish](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/promotionUnpublish.png)
-        -  ![auto_unpublish_console](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/auto_unpublish_console.png)
+        -  ![promotion-unpublish](../assets/promotionUnpublish.png)
+        -  ![auto_unpublish_console](../assets/auto_unpublish_console.png)
 
     - PromoteOnReload (**Apps**) *__Optional__*
         - Contains the value `True`
         - This custom property allows for the application to be automatically promoted to the target server(s) on reload of the application. It must be enabled in the console, and requires a tag. If the application is set to this property and contains the other mandatory values, the application will be tagged so that it will be excluded from the other processes (ignoring emails, won't strip custom properties off, won't unpublish, etc). **Note that you will need to create this tag!**
-        - ![can-promote](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/PromoteOnReload.png)
-        - ![auto_promote_reload_console](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/auto_promote_reload_console.png)
+        - ![can-promote](../assets/PromoteOnReload.png)
+        - ![auto_promote_reload_console](../assets/auto_promote_reload_console.png)
     - CanPromote (**Users**)
 
         - Contains the value `True`
         - The purpose of this custom property is to only allow certain users the ability to promote an app to another Qlik Sense site. There are suggested security rules that leverage this custom property so that only users with this property applied can see custom properties that begin with 'Promot*'
-        -  ![can-promote](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/canPromote.png)
+        -  ![can-promote](../assets/canPromote.png)
 
     - CanPromoteFrom (**Streams**)
 
         - Contains the value `True`
         - The purpose of this custom property is to control what streams _non-owners_ can promote from. If Bob publishes an app to the _Sales_ stream and Bill has the custom property _"CanPromote"_ with the value `True`, if the stream has _"CanPromoteFrom"_ set to `True` and matching group values (explained later), Bill could promote Bob's app. However, if Bill created the app and published it to the _Sales_ stream and that stream did *not* have the _"CanPromoteFrom"_ set to `True`, Bill could still promote the app, as he is the app owner and also has a value in _"CanPromote"_. The custom properties in these security rule examples are only modified such that some are either available or not.
-        -  ![can-promote-from](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/canPromoteFrom.png)
+        -  ![can-promote-from](../assets/canPromoteFrom.png)
 
     - CanPromoteGroup (**Streams, Users**)
 
@@ -272,7 +272,7 @@ So the folder structure resembles:
             -  `Sales_Admin`
 
         - The purpose for this additional custom property is to control _where_ a non-owner of an application that has the _"CanPromote"_ custom property can promote _from_. George might have the ability to see the _Sales_ stream and the _Marketing_ stream, but you might only want him to be able to promote apps from _Sales_. This custom property is used in a custom security rule to enable that functionality.
-        -  ![can-promote-group](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/canPromoteGroupNew2.png)
+        -  ![can-promote-group](../assets/canPromoteGroupNew2.png)
 
     - EmailAlertOnPublishTo (**Streams**) *__Optional__*
 
@@ -286,7 +286,7 @@ So the folder structure resembles:
                 cb2f9262-daf5-4131-ba4f-8c857caeca34, them@who.org
                 946d762a-6573-4bd7-86de-c8e2ce26b04d, bark@dog.woof
 
-        -  ![email-alert-on-publish-to](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/emailAlertOnPublishTo.png)
+        -  ![email-alert-on-publish-to](../assets/emailAlertOnPublishTo.png)
 
 8. Security Rules
 
@@ -302,7 +302,7 @@ So the folder structure resembles:
         - Conditions `(!user.IsAnonymous() and !(resource.name like "Promot*")) or (!(user.@CanPromote.Empty()) and resource.name like "Promot*")`
         - Context: `Both in hub and QMC`
 
-        ![securityRule#1](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/securityRule1.png)
+        ![securityRule#1](../assets/securityRule1.png)
 
     - New Rule #2
 
@@ -312,7 +312,7 @@ So the folder structure resembles:
         - Actions: `Update`
         - Conditions: `(resource.IsOwned() and resource.owner = user) or (!resource.stream.@CanPromoteFrom.empty() and !user.@CanPromote.Empty() and (resource.stream.@CanPromoteGroup = user.@CanPromoteGroup))`
         - Context: `Both in hub and QMC`
-        ![securityRule#2](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/securityRule2New.png)
+        ![securityRule#2](../assets/securityRule2New.png)
 
     - New Rule #3 (publish is optional here)
 
@@ -323,7 +323,7 @@ So the folder structure resembles:
         - Conditions: `((user.@Group=resource.@Group))`
         - Context: `Both in hub and QMC`
         
-        ![securityRule#3](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/securityRule3.png)
+        ![securityRule#3](../assets/securityRule3.png)
 
 
 9. For initial testing, manually run _notification_flask_listener.py_ and _notification_creator.py_ **Make sure that you run them from the main program directory, so that the _Log/_ folder is created in the appropriate place! It is created in the directory where the programs are run, and you will need to leverage it for the auditing dashboard if you choose to use it.**
@@ -338,12 +338,12 @@ I personally use NSSM to easily create windows services. You can follow the belo
 
 The default path for python.exe is `C:\Users\<USER>\AppData\Local\Programs\Python\{PythonVersion}\python.exe` **Make sure that you run them from the main program directory, so that the _Log/_ folder is created in the appropriate place! It is created in the directory where the programs are run, and you will need to leverage it for the auditing dashboard if you choose to use it.**
 
-![nssm-flask-listener](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/notification_flask_listener.png)
+![nssm-flask-listener](../assets/notification_flask_listener.png)
 
-![nssm-flask-listener](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/notification_creator.png)
+![nssm-flask-listener](../assets/notification_creator.png)
 
 ## Qlik Sense Auditing Dashboard
 
 There is also a dashboard that is included that monitors all of the logs. This dashboard shows app promotion flow across sites, tracks app versioning lineage, monitors emails, and more. To configure it, simply make a data connection to the directory of the _Log/_ folder in the parent directory, and update the variable `vLogDirectory` under the "Variables" tab in the load script. You can find the qvf in the parent directory of this project.
 
-![dashboard](https://s3.amazonaws.com/dpi-sse/qlik-qrs-notification-app-promoter/dashboard.png)
+![dashboard](../assets/dashboard.png)
